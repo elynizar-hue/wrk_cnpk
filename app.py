@@ -16,7 +16,7 @@ import plotly.express as px
 import streamlit as st
 
 from db import get_read_connection, init_db, DB_FILE
-from mqtt_listener import demarrer_listener, ARMOIRES
+from mqtt_listener import demarrer_listener, ARMOIRES, MQTT_BROKER, MQTT_PORT
 from report import generer_rapport_pdf
 
 st.set_page_config(
@@ -37,12 +37,20 @@ def _listener_singleton():
 listener = _listener_singleton()
 
 if listener is None:
+    raw_broker = os.getenv("MQTT_BROKER")
+    raw_port = os.getenv("MQTT_PORT")
     st.error(
         "MQTT listener n'a pas pu se connecter au broker. "
         "Vérifiez la variable d'environnement `MQTT_BROKER` et `MQTT_PORT` dans votre déploiement Streamlit. "
         "Le broker ne peut pas être `localhost` dans la plupart des environnements cloud."
     )
-    st.write("Broker attendu:", os.getenv("MQTT_BROKER", "localhost"), "port:", os.getenv("MQTT_PORT", "1883"))
+    st.write("MQTT_BROKER env:", repr(raw_broker), "MQTT_PORT env:", repr(raw_port))
+    st.write("Broker attendu:", MQTT_BROKER, "port:", MQTT_PORT)
+    if raw_broker == "localhost":
+        st.warning(
+            "La variable d'environnement `MQTT_BROKER` est définie sur localhost. "
+            "Changez-la vers un broker accessible depuis le cloud, par exemple `broker.hivemq.com`."
+        )
     st.stop()
 
 

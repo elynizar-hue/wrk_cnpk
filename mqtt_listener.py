@@ -19,7 +19,9 @@ def _log(line: str):
         # best-effort logging, never fail the listener because logging broke
         pass
 
-MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
+# Default to a public MQTT broker when no broker is configured by environment.
+# In cloud deployments, `localhost` is not reachable from outside the host.
+MQTT_BROKER = os.getenv("MQTT_BROKER") or "broker.hivemq.com"
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_PREFIX = os.getenv("MQTT_PREFIX", "canpack").strip().strip("/")
 
