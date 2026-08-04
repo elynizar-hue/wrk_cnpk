@@ -34,8 +34,16 @@ def _listener_singleton():
     init_db(seed_demo_data=False)
     return demarrer_listener()
 
+listener = _listener_singleton()
 
-_listener_singleton()
+if listener is None:
+    st.error(
+        "MQTT listener n'a pas pu se connecter au broker. "
+        "Vérifiez la variable d'environnement `MQTT_BROKER` et `MQTT_PORT` dans votre déploiement Streamlit. "
+        "Le broker ne peut pas être `localhost` dans la plupart des environnements cloud."
+    )
+    st.write("Broker attendu:", os.getenv("MQTT_BROKER", "localhost"), "port:", os.getenv("MQTT_PORT", "1883"))
+    st.stop()
 
 
 # ---- Fonctions de lecture des donnees ----
