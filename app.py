@@ -31,7 +31,7 @@ COULEURS_STATUT = {"normal": "#2ECC71", "PRECOCE": "#F39C12", "CRITIQUE": "#E74C
 # ---- Demarrage du listener MQTT en arriere-plan (une seule fois par process) ----
 @st.cache_resource
 def _listener_singleton():
-    init_db()
+    init_db(seed_demo_data=False)
     return demarrer_listener()
 
 

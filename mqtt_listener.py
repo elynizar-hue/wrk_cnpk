@@ -208,7 +208,8 @@ def demarrer_listener():
         _log("MQTT connect failed:\n" + traceback.format_exc())
         return None
 
-    for topic in _TOPIC_TO_ARMOIRE.keys():
+    dashboard_topics = [topic for topic in _TOPIC_TO_ARMOIRE.keys() if topic.endswith("/dashboard")]
+    for topic in dashboard_topics:
         try:
             client.subscribe(topic)
             _log(f"Subscribed to {topic}")
