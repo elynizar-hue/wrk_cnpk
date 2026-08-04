@@ -1,13 +1,57 @@
 ﻿import os
 import sqlite3
+import threading
 from datetime import datetime, timedelta
 
 DB_FILE = os.path.join(os.path.dirname(__file__), ".canpack_data.db")
 
-def get_connection():
-    conn = sqlite3.connect(DB_FILE, check_same_thread=False)
+# In-process lock to serialize write operations and avoid SQLITE_BUSY
+_WRITE_LOCK = threading.Lock()
+
+
+def get_connection(timeout: float = 30.0):
+    """Return a new sqlite3 connection configured for writes.
+
+    Uses WAL mode and a busy timeout, then returns a writable connection.
+    """
+    conn = sqlite3.connect(DB_FILE, timeout=timeout, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA busy_timeout = 5000")
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA synchronous = NORMAL")
+    except Exception:
+        pass
     return conn
+
+
+def get_read_connection(timeout: float = 60.0):
+    """Return a new sqlite3 read-only connection for concurrent Streamlit reads."""
+    uri = f"file:{DB_FILE}?mode=ro"
+    conn = sqlite3.connect(uri, uri=True, timeout=timeout, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA busy_timeout = 10000")
+    except Exception:
+        pass
+    return conn
+
+
+def execute_write(sql: str, params: tuple = ()):  # helper to serialize writes
+    """Execute a write SQL statement using a short lock to avoid SQLITE_BUSY.
+
+    Returns the sqlite3.Cursor for the executed statement.
+    """
+    with _WRITE_LOCK:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(sql, params)
+            conn.commit()
+            return cur
+        finally:
+            conn.close()
+
 
 def init_db(seed_demo_data=True):
     conn = get_connection()
@@ -42,6 +86,7 @@ def init_db(seed_demo_data=True):
 
     return conn
 
+
 def _seed_sample_data(conn):
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM mesures")
@@ -72,7 +117,7 @@ def _seed_sample_data(conn):
     ]
     for ts, nom, niveau, valeur in alertes:
         cursor.execute(
-            "INSERT INTO alertes (horodatage, armoire, niveau, valeur_mA) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO alertes (horodatage, armoire, niveau, valeur_mA) VALUES (?, ?, ?, ?)",
             (ts.isoformat(), nom, niveau, valeur),
         )
 

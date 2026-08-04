@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
 
-from db import get_connection, init_db
+from db import get_read_connection, init_db, DB_FILE
 from mqtt_listener import demarrer_listener, ARMOIRES
 from report import generer_rapport_pdf
 
@@ -40,45 +40,51 @@ _listener_singleton()
 
 # ---- Fonctions de lecture des donnees ----
 def charger_dernieres_mesures():
-    conn = get_connection()
-    df = pd.read_sql_query(
-        """
-        SELECT armoire, courant_mA, moyenne, statut, horodatage
-        FROM mesures
-        WHERE id IN (SELECT MAX(id) FROM mesures GROUP BY armoire)
-        """,
-        conn,
-    )
-    conn.close()
+    conn = get_read_connection()
+    try:
+        df = pd.read_sql_query(
+            """
+            SELECT armoire, courant_mA, moyenne, statut, horodatage
+            FROM mesures
+            WHERE id IN (SELECT MAX(id) FROM mesures GROUP BY armoire)
+            """,
+            conn,
+        )
+    finally:
+        conn.close()
     return df
 
 
 def charger_historique(armoire, depuis, jusqu_a):
-    conn = get_connection()
-    df = pd.read_sql_query(
-        """
-        SELECT horodatage, courant_mA, moyenne, statut
-        FROM mesures
-        WHERE armoire = ? AND horodatage BETWEEN ? AND ?
-        ORDER BY horodatage ASC
-        """,
-        conn,
-        params=(armoire, depuis, jusqu_a),
-    )
-    conn.close()
+    conn = get_read_connection()
+    try:
+        df = pd.read_sql_query(
+            """
+            SELECT horodatage, courant_mA, moyenne, statut
+            FROM mesures
+            WHERE armoire = ? AND horodatage BETWEEN ? AND ?
+            ORDER BY horodatage ASC
+            """,
+            conn,
+            params=(armoire, depuis, jusqu_a),
+        )
+    finally:
+        conn.close()
     if not df.empty:
         df["horodatage"] = pd.to_datetime(df["horodatage"])
     return df
 
 
 def charger_alertes(limite=100):
-    conn = get_connection()
-    df = pd.read_sql_query(
-        "SELECT horodatage, armoire, niveau, valeur_mA FROM alertes ORDER BY id DESC LIMIT ?",
-        conn,
-        params=(limite,),
-    )
-    conn.close()
+    conn = get_read_connection()
+    try:
+        df = pd.read_sql_query(
+            "SELECT horodatage, armoire, niveau, valeur_mA FROM alertes ORDER BY id DESC LIMIT ?",
+            conn,
+            params=(limite,),
+        )
+    finally:
+        conn.close()
     return df
 
 
@@ -133,6 +139,40 @@ for nom, couleur in COULEURS_STATUT.items():
     st.sidebar.markdown(
         f"<span style='color:{couleur}'>●</span> {nom}", unsafe_allow_html=True
     )
+
+# Diagnostics rapide (utile en deploiement)
+if st.sidebar.checkbox("Afficher diagnostics MQTT/DB"):
+    st.sidebar.markdown("**Debug: DB & MQTT**")
+    try:
+        st.sidebar.write("DB file:", DB_FILE)
+        if os.path.exists(DB_FILE):
+            st.sidebar.write("Taille (bytes):", os.path.getsize(DB_FILE))
+            st.sidebar.write("Modifié:", datetime.utcfromtimestamp(os.path.getmtime(DB_FILE)).isoformat())
+        else:
+            st.sidebar.warning("Fichier DB introuvable dans ce processus.")
+        # show last rows
+        conn_dbg = get_read_connection()
+        try:
+            df_dbg = pd.read_sql_query("SELECT id, armoire, courant_mA, moyenne, statut, horodatage FROM mesures ORDER BY id DESC LIMIT 20", conn_dbg)
+            st.sidebar.write("Dernieres mesures (20):")
+            st.sidebar.dataframe(df_dbg, use_container_width=True)
+            df_alert = pd.read_sql_query("SELECT id, horodatage, armoire, niveau, valeur_mA FROM alertes ORDER BY id DESC LIMIT 20", conn_dbg)
+            st.sidebar.write("Dernieres alertes (20):")
+            st.sidebar.dataframe(df_alert, use_container_width=True)
+        finally:
+            conn_dbg.close()
+    except Exception as e:
+        st.sidebar.error(f"Erreur diagnostics: {e}")
+    # MQTT listener status
+    try:
+        client = _listener_singleton()
+        if client is None:
+            st.sidebar.error("MQTT listener non demarre dans ce processus.")
+        else:
+            st.sidebar.success("MQTT listener demarre (objet present)")
+            st.sidebar.write(type(client))
+    except Exception as e:
+        st.sidebar.error(f"Erreur status MQTT: {e}")
 
 # ---- En-tete / Vue d'ensemble ----
 st.title("Surveillance de l'isolement électrique")

@@ -1,0 +1,21 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local SQLite database files
+.canpack_data.db
+.canpack_data.db-shm
+.canpack_data.db-wal
+
+# Logs
+*.log
+
+# Streamlit / local development
+.venv/
+venv/
+.env
+
+# Node-RED debugging exported flows (optional)
+# node_red_flow_clean.json

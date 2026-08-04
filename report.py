@@ -23,7 +23,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak,
 )
 
-from db import get_connection
+from db import get_read_connection
 from mqtt_listener import ARMOIRES
 
 COULEUR_NORMAL = colors.HexColor("#2ECC71")
@@ -32,36 +32,40 @@ COULEUR_CRITIQUE = colors.HexColor("#E74C3C")
 
 
 def _charger_historique(armoire, depuis_heures=24):
-    conn = get_connection()
+    conn = get_read_connection()
     depuis = (datetime.utcnow() - timedelta(hours=depuis_heures)).isoformat()
-    df = pd.read_sql_query(
-        """
-        SELECT horodatage, courant_mA, moyenne, statut
-        FROM mesures
-        WHERE armoire = ? AND horodatage >= ?
-        ORDER BY horodatage ASC
-        """,
-        conn, params=(armoire, depuis),
-    )
-    conn.close()
+    try:
+        df = pd.read_sql_query(
+            """
+            SELECT horodatage, courant_mA, moyenne, statut
+            FROM mesures
+            WHERE armoire = ? AND horodatage >= ?
+            ORDER BY horodatage ASC
+            """,
+            conn, params=(armoire, depuis),
+        )
+    finally:
+        conn.close()
     if not df.empty:
         df["horodatage"] = pd.to_datetime(df["horodatage"])
     return df
 
 
 def _charger_alertes(depuis_heures=24):
-    conn = get_connection()
+    conn = get_read_connection()
     depuis = (datetime.utcnow() - timedelta(hours=depuis_heures)).isoformat()
-    df = pd.read_sql_query(
-        """
-        SELECT horodatage, armoire, niveau, valeur_mA
-        FROM alertes
-        WHERE horodatage >= ?
-        ORDER BY horodatage DESC
-        """,
-        conn, params=(depuis,),
-    )
-    conn.close()
+    try:
+        df = pd.read_sql_query(
+            """
+            SELECT horodatage, armoire, niveau, valeur_mA
+            FROM alertes
+            WHERE horodatage >= ?
+            ORDER BY horodatage DESC
+            """,
+            conn, params=(depuis,),
+        )
+    finally:
+        conn.close()
     return df
 
 

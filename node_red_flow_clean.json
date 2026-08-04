@@ -1,0 +1,1111 @@
+[
+    {
+        "id": "21cff59813ffcb36",
+        "type": "tab",
+        "label": "Canpack - Isolement Body Maker / Laveuse / LSM",
+        "disabled": false,
+        "info": "Surveillance du courant de fuite (isolement) sur 3 armoires critiques : Body Maker, Zone Laveuse, LSM (Vernissage)."
+    },
+    {
+        "id": "a7d48512aa4728a0",
+        "type": "comment",
+        "z": "21cff59813ffcb36",
+        "name": "Compatibilite MQTT : topics fuite + dashboard",
+        "info": "",
+        "x": 280,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "831d5b22530392cf",
+        "type": "inject",
+        "z": "21cff59813ffcb36",
+        "name": "Init au deploiement",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "f38a125b1938c941"
+            ]
+        ]
+    },
+    {
+        "id": "f38a125b1938c941",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Init contexte",
+        "func": "flow.set('simulation_mode', true);\nflow.set('ma_1', []); flow.set('ma_2', []); flow.set('ma_3', []);\nflow.set('hist_1', []); flow.set('hist_2', []); flow.set('hist_3', []);\nglobal.set('alert_log', []);\nglobal.set('overview', {});\nreturn null;",
+        "outputs": 1,
+        "x": 380,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4dac80f092b618ff",
+        "type": "ui_switch",
+        "z": "21cff59813ffcb36",
+        "name": "Mode simulation/reel",
+        "label": "Mode simulation (ON) / Donnees reelles (OFF)",
+        "group": "ui_group_control",
+        "order": 1,
+        "passthru": false,
+        "decouple": "false",
+        "topic": "mode",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "x": 170,
+        "y": 160,
+        "wires": [
+            [
+                "bb5ba83977700b88"
+            ]
+        ]
+    },
+    {
+        "id": "bb5ba83977700b88",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Appliquer mode",
+        "func": "flow.set('simulation_mode', msg.payload);\nreturn msg;",
+        "outputs": 1,
+        "x": 390,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "997b972bdfa0f7e4",
+        "type": "ui_text",
+        "z": "21cff59813ffcb36",
+        "group": "2018b022f19682ea",
+        "order": 1,
+        "name": "Vue d'ensemble",
+        "label": "Etat des 3 armoires:",
+        "format": "{{msg.payload}}",
+        "layout": "row",
+        "x": 1520,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "be48705c36e473a8",
+        "type": "inject",
+        "z": "21cff59813ffcb36",
+        "name": "Simu Body Maker (5s)",
+        "repeat": "5",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 240,
+        "wires": [
+            [
+                "da0fb5c8df3f42da"
+            ]
+        ]
+    },
+    {
+        "id": "da0fb5c8df3f42da",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Simuler capteur - Body Maker",
+        "func": "context.base = context.base || 10;\ncontext.base += (Math.random() - 0.48) * 1.2;\ncontext.base = Math.max(3, Math.min(context.base, 35));\nlet bruit = (Math.random() - 0.5) * 3;\nlet pic = (Math.random() < 0.02) ? (70 + Math.random() * 90) : 0;\nlet valeur = Math.max(0, context.base + bruit + pic);\nmsg.payload = { courant_mA: parseFloat(valeur.toFixed(1)) };\nmsg._source = 'sim';\nmsg.cabinet = 'Body Maker';\nreturn msg;",
+        "outputs": 1,
+        "x": 440,
+        "y": 240,
+        "wires": [
+            [
+                "ca939bd8a87b5e79"
+            ]
+        ]
+    },
+    {
+        "id": "29364d8f7acf695e",
+        "type": "mqtt in",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT Body Maker",
+        "topic": "canpack/bodymaker/+",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "mqtt_broker1",
+        "inputs": 0,
+        "x": 190,
+        "y": 280,
+        "wires": [
+            [
+                "9baef31cfca7d378"
+            ]
+        ]
+    },
+    {
+        "id": "9baef31cfca7d378",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Parser payload - Body Maker",
+        "func": "let payload = msg.payload;\nif (typeof payload === 'string') { try { payload = JSON.parse(payload); } catch (e) { return null; } }\nif (typeof payload === 'number') { payload = { courant_mA: payload }; }\nmsg.payload = payload;\nmsg._source = 'mqtt';\nmsg.cabinet = 'Body Maker';\nreturn msg;",
+        "outputs": 1,
+        "x": 440,
+        "y": 280,
+        "wires": [
+            [
+                "ca939bd8a87b5e79",
+                "dbg_body_parser"
+            ]
+        ]
+    },
+    {
+        "id": "ca939bd8a87b5e79",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Traitement, seuils & prediction - Body Maker",
+        "func": "let modeSimu = flow.get('simulation_mode');\nif (modeSimu === undefined) modeSimu = true;\nif ((modeSimu && msg._source !== 'sim') || (!modeSimu && msg._source !== 'mqtt')) { return [null,null,null,null,null,null]; }\nconst SEUIL_PRECOCE = 60, SEUIL_CRITIQUE = 150;\nconst NOM = 'Body Maker';\nlet valeur = Number(msg.payload.courant_mA ?? msg.payload.courant ?? msg.payload.value ?? 0);\nlet ma = flow.get('ma_1') || []; ma.push(valeur); if (ma.length > 6) ma.shift(); flow.set('ma_1', ma);\nlet moyenne = ma.reduce((a,b)=>a+b,0) / ma.length;\nlet statut = 'normal', couleur = '#2ECC71';\nif (moyenne >= SEUIL_CRITIQUE) { statut = 'CRITIQUE'; couleur = '#E74C3C'; }\nelse if (moyenne >= SEUIL_PRECOCE) { statut = 'PRECOCE'; couleur = '#F39C12'; }\nlet hist = flow.get('hist_1') || []; hist.push({ t: Date.now(), v: moyenne }); if (hist.length > 12) hist.shift(); flow.set('hist_1', hist);\nlet pente = 0;\nif (hist.length >= 4) {\n  let n = hist.length, t0 = hist[0].t, sx=0, sy=0, sxy=0, sx2=0;\n  hist.forEach(p => { let x=(p.t-t0)/60000, y=p.v; sx+=x; sy+=y; sxy+=x*y; sx2+=x*x; });\n  let denom = n*sx2 - sx*sx;\n  pente = denom !== 0 ? (n*sxy - sx*sy)/denom : 0;\n}\nlet texte_prediction;\nif (pente > 0.5) {\n  let restant = SEUIL_CRITIQUE - moyenne;\n  let minutesRestantes = restant / pente;\n  texte_prediction = minutesRestantes > 0 && minutesRestantes < 1440 ? `<span>Hausse +${pente.toFixed(2)} mA/min - seuil critique estime dans ~${minutesRestantes.toFixed(0)} min</span>` : `<span>Hausse legere, pas d'echeance critique estimee</span>`;\n} else if (pente < -0.5) {\n  texte_prediction = `<span style='color:#2ECC71'>Tendance a la baisse (${pente.toFixed(2)} mA/min)</span>`;\n} else {\n  texte_prediction = `<span>Stable</span>`;\n}\nlet msgGauge = { payload: parseFloat(moyenne.toFixed(1)) };\nlet msgChart = { payload: parseFloat(moyenne.toFixed(1)), topic: NOM };\nlet msgStatus = { payload: `<span style='color:${couleur}; font-weight:bold;'>${statut}</span>` };\nlet msgPrediction = { payload: texte_prediction };\nlet msgSummary = { payload: { cabinet: NOM, courant_mA: parseFloat(valeur.toFixed(1)), moyenne: parseFloat(moyenne.toFixed(1)), statut: statut, horodatage: new Date().toISOString(), prediction: texte_prediction, couleur: couleur } };\nlet msgAlert = null;\nif (statut !== 'normal') {\n  msgAlert = { payload: { cabinet: NOM, niveau: statut, valeur_mA: parseFloat(moyenne.toFixed(1)), horodatage: new Date().toISOString() } };\n}\nreturn [msgGauge, msgChart, msgStatus, msgPrediction, msgSummary, msgAlert];",
+        "outputs": 6,
+        "x": 790,
+        "y": 260,
+        "wires": [
+            [
+                "52103ced38b5b684",
+                "dbg_body_gauge"
+            ],
+            [
+                "62c22f7802593d18"
+            ],
+            [
+                "87015e11efe31963"
+            ],
+            [
+                "2ef2c4e506795bcf"
+            ],
+            [
+                "d308880f61b0be00",
+                "c0740a1aad4b625c"
+            ],
+            [
+                "2d7ff1fff3d67d95",
+                "2a3ada64bf5103ba"
+            ]
+        ]
+    },
+    {
+        "id": "c0740a1aad4b625c",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Publier Body Maker",
+        "func": "let raw = msg.payload || {};\nlet courant = Number(raw.courant_mA ?? raw.valeur ?? raw.courant ?? raw.value ?? 0);\nlet moyenne = Number(raw.moyenne ?? raw.valeur ?? raw.avg ?? raw.average ?? raw.moyenne_glissante ?? courant);\nlet statut = raw.statut ?? raw.status ?? raw.niveau ?? 'normal';\nlet horodatage = raw.horodatage ?? raw.timestamp ?? new Date().toISOString();\nlet couleur = raw.couleur ?? raw.color ?? (statut === 'CRITIQUE' ? '#E74C3C' : statut === 'PRECOCE' ? '#F39C12' : '#2ECC71');\nlet payload = { courant_mA: courant, moyenne: moyenne, statut: statut, horodatage: horodatage, prediction: raw.prediction ?? '', couleur: couleur };\nlet s = JSON.stringify(payload);\nlet msgDash = { ...msg, topic: 'canpack/bodymaker/dashboard', payload: s };\nlet msgLegacy = { ...msg, topic: 'canpack/bodymaker/fuite', payload: s };\nreturn [msgDash, msgLegacy];",
+        "outputs": 2,
+        "x": 660,
+        "y": 180,
+        "wires": [
+            [
+                "2a98e7a5e398591f",
+                "dbg_body_pub_dash"
+            ],
+            [
+                "151ae54de0ea5234",
+                "dbg_body_pub_legacy"
+            ]
+        ]
+    },
+    {
+        "id": "2a98e7a5e398591f",
+        "type": "mqtt out",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT Out Body Maker Dashboard",
+        "topic": "canpack/bodymaker/dashboard",
+        "qos": "0",
+        "retain": true,
+        "broker": "mqtt_broker1",
+        "x": 920,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "151ae54de0ea5234",
+        "type": "mqtt out",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT Out Body Maker Legacy",
+        "topic": "canpack/bodymaker/fuite",
+        "qos": "0",
+        "retain": false,
+        "broker": "mqtt_broker1",
+        "x": 930,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "52103ced38b5b684",
+        "type": "ui_gauge",
+        "z": "21cff59813ffcb36",
+        "name": "Courant de fuite - Body Maker",
+        "group": "ui_group_cab1",
+        "order": 1,
+        "gtype": "gage",
+        "title": "Body Maker",
+        "label": "mA",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "200",
+        "colors": [
+            "#2ECC71",
+            "#F39C12",
+            "#E74C3C"
+        ],
+        "seg1": "60",
+        "seg2": "150",
+        "x": 1350,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "dbg_body_gauge",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG Body Gauge",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1500,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "dbg_body_pub_dash",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG Body Publish (dashboard)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1300,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "dbg_body_pub_legacy",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG Body Publish (legacy)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1320,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "dbg_body_parser",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG Body Parser",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1120,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "62c22f7802593d18",
+        "type": "ui_chart",
+        "z": "21cff59813ffcb36",
+        "name": "Tendance - Body Maker",
+        "group": "ui_group_cab1",
+        "order": 2,
+        "width": "",
+        "height": "",
+        "label": "Tendance (mA)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "200",
+        "removeOlder": "1",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": "",
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1370,
+        "y": 260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "87015e11efe31963",
+        "type": "ui_text",
+        "z": "21cff59813ffcb36",
+        "group": "ui_group_cab1",
+        "order": 3,
+        "name": "Statut Body Maker",
+        "label": "Statut:",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1370,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "2ef2c4e506795bcf",
+        "type": "ui_text",
+        "z": "21cff59813ffcb36",
+        "group": "ui_group_cab1",
+        "order": 4,
+        "name": "Prediction Body Maker",
+        "label": "Prediction:",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1360,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "d9ae7602d696be6f",
+        "type": "inject",
+        "z": "21cff59813ffcb36",
+        "name": "Simu Zone Laveuse (5s)",
+        "repeat": "5",
+        "once": true,
+        "onceDelay": 1.2,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 390,
+        "wires": [
+            [
+                "b2559741880ffe78"
+            ]
+        ]
+    },
+    {
+        "id": "b2559741880ffe78",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Simuler capteur - Zone Laveuse",
+        "func": "context.base = context.base || 20;\ncontext.base += (Math.random() - 0.42) * 1.8;\ncontext.base = Math.max(5, Math.min(context.base, 55));\nlet bruit = (Math.random() - 0.5) * 5;\nlet pic = (Math.random() < 0.04) ? (80 + Math.random() * 110) : 0;\nlet valeur = Math.max(0, context.base + bruit + pic);\nmsg.payload = { courant_mA: parseFloat(valeur.toFixed(1)) };\nmsg._source = 'sim';\nmsg.cabinet = 'Zone Laveuse';\nreturn msg;",
+        "outputs": 1,
+        "x": 440,
+        "y": 390,
+        "wires": [
+            [
+                "b74afeabbcbf2e34"
+            ]
+        ]
+    },
+    {
+        "id": "9c5f0d31dd83077e",
+        "type": "mqtt in",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT Zone Laveuse",
+        "topic": "canpack/laveuse/+",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "mqtt_broker1",
+        "inputs": 0,
+        "x": 190,
+        "y": 430,
+        "wires": [
+            [
+                "3a5ca5979adf634f"
+            ]
+        ]
+    },
+    {
+        "id": "3a5ca5979adf634f",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Parser payload - Zone Laveuse",
+        "func": "let payload = msg.payload;\nif (typeof payload === 'string') { try { payload = JSON.parse(payload); } catch (e) { return null; } }\nif (typeof payload === 'number') { payload = { courant_mA: payload }; }\nmsg.payload = payload;\nmsg._source = 'mqtt';\nmsg.cabinet = 'Zone Laveuse';\nreturn msg;",
+        "outputs": 1,
+        "x": 440,
+        "y": 430,
+        "wires": [
+            [
+                "b74afeabbcbf2e34",
+                "dbg_laveuse_parser"
+            ]
+        ]
+    },
+    {
+        "id": "b74afeabbcbf2e34",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Traitement, seuils & prediction - Zone Laveuse",
+        "func": "let modeSimu = flow.get('simulation_mode');\nif (modeSimu === undefined) modeSimu = true;\nif ((modeSimu && msg._source !== 'sim') || (!modeSimu && msg._source !== 'mqtt')) { return [null,null,null,null,null,null]; }\nconst SEUIL_PRECOCE = 50, SEUIL_CRITIQUE = 130;\nconst NOM = 'Zone Laveuse';\nlet valeur = Number(msg.payload.courant_mA ?? msg.payload.courant ?? msg.payload.value ?? 0);\nlet ma = flow.get('ma_2') || []; ma.push(valeur); if (ma.length > 6) ma.shift(); flow.set('ma_2', ma);\nlet moyenne = ma.reduce((a,b)=>a+b,0) / ma.length;\nlet statut = 'normal', couleur = '#2ECC71';\nif (moyenne >= SEUIL_CRITIQUE) { statut = 'CRITIQUE'; couleur = '#E74C3C'; }\nelse if (moyenne >= SEUIL_PRECOCE) { statut = 'PRECOCE'; couleur = '#F39C12'; }\nlet hist = flow.get('hist_2') || []; hist.push({ t: Date.now(), v: moyenne }); if (hist.length > 12) hist.shift(); flow.set('hist_2', hist);\nlet pente = 0;\nif (hist.length >= 4) {\n  let n = hist.length, t0 = hist[0].t, sx=0, sy=0, sxy=0, sx2=0;\n  hist.forEach(p => { let x=(p.t-t0)/60000, y=p.v; sx+=x; sy+=y; sxy+=x*y; sx2+=x*x; });\n  let denom = n*sx2 - sx*sx;\n  pente = denom !== 0 ? (n*sxy - sx*sy)/denom : 0;\n}\nlet texte_prediction;\nif (pente > 0.5) {\n  let restant = SEUIL_CRITIQUE - moyenne;\n  let minutesRestantes = restant / pente;\n  texte_prediction = minutesRestantes > 0 && minutesRestantes < 1440 ? `<span>Hausse +${pente.toFixed(2)} mA/min - seuil critique estime dans ~${minutesRestantes.toFixed(0)} min</span>` : `<span>Hausse legere, pas d'echeance critique estimee</span>`;\n} else if (pente < -0.5) {\n  texte_prediction = `<span style='color:#2ECC71'>Tendance a la baisse (${pente.toFixed(2)} mA/min)</span>`;\n} else {\n  texte_prediction = `<span>Stable</span>`;\n}\nlet msgGauge = { payload: parseFloat(moyenne.toFixed(1)) };\nlet msgChart = { payload: parseFloat(moyenne.toFixed(1)), topic: NOM };\nlet msgStatus = { payload: `<span style='color:${couleur}; font-weight:bold;'>${statut}</span>` };\nlet msgPrediction = { payload: texte_prediction };\nlet msgSummary = { payload: { cabinet: NOM, courant_mA: parseFloat(valeur.toFixed(1)), moyenne: parseFloat(moyenne.toFixed(1)), statut: statut, horodatage: new Date().toISOString(), prediction: texte_prediction, couleur: couleur } };\nlet msgAlert = null;\nif (statut !== 'normal') {\n  msgAlert = { payload: { cabinet: NOM, niveau: statut, valeur_mA: parseFloat(moyenne.toFixed(1)), horodatage: new Date().toISOString() } };\n}\nreturn [msgGauge, msgChart, msgStatus, msgPrediction, msgSummary, msgAlert];",
+        "outputs": 6,
+        "x": 800,
+        "y": 420,
+        "wires": [
+            [
+                "a2325cdaea1163c9",
+                "dbg_laveuse_gauge"
+            ],
+            [
+                "7d82a083506e0e05"
+            ],
+            [
+                "58f660aab3685997"
+            ],
+            [
+                "5e30a8ea84812fa5"
+            ],
+            [
+                "d308880f61b0be00",
+                "2947bcbca89aa509"
+            ],
+            [
+                "2d7ff1fff3d67d95",
+                "2a3ada64bf5103ba"
+            ]
+        ]
+    },
+    {
+        "id": "2947bcbca89aa509",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Publier Zone Laveuse",
+        "func": "let raw = msg.payload || {};\nlet courant = Number(raw.courant_mA ?? raw.valeur ?? raw.courant ?? raw.value ?? 0);\nlet moyenne = Number(raw.moyenne ?? raw.valeur ?? raw.avg ?? raw.average ?? raw.moyenne_glissante ?? courant);\nlet statut = raw.statut ?? raw.status ?? raw.niveau ?? 'normal';\nlet horodatage = raw.horodatage ?? raw.timestamp ?? new Date().toISOString();\nlet couleur = raw.couleur ?? raw.color ?? (statut === 'CRITIQUE' ? '#E74C3C' : statut === 'PRECOCE' ? '#F39C12' : '#2ECC71');\nlet payload = { courant_mA: courant, moyenne: moyenne, statut: statut, horodatage: horodatage, prediction: raw.prediction ?? '', couleur: couleur };\nlet s = JSON.stringify(payload);\nlet msgDash = { ...msg, topic: 'canpack/laveuse/dashboard', payload: s };\nlet msgLegacy = { ...msg, topic: 'canpack/laveuse/fuite', payload: s };\nreturn [msgDash, msgLegacy];",
+        "outputs": 2,
+        "x": 670,
+        "y": 360,
+        "wires": [
+            [
+                "4af53ede27a9fe5f",
+                "dbg_laveuse_pub_dash"
+            ],
+            [
+                "7589ebf5eccd04fc",
+                "dbg_laveuse_pub_legacy"
+            ]
+        ]
+    },
+    {
+        "id": "4af53ede27a9fe5f",
+        "type": "mqtt out",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT Out Zone Laveuse Dashboard",
+        "topic": "canpack/laveuse/dashboard",
+        "qos": "0",
+        "retain": true,
+        "broker": "mqtt_broker1",
+        "x": 910,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "7589ebf5eccd04fc",
+        "type": "mqtt out",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT Out Zone Laveuse Legacy",
+        "topic": "canpack/laveuse/fuite",
+        "qos": "0",
+        "retain": false,
+        "broker": "mqtt_broker1",
+        "x": 910,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "a2325cdaea1163c9",
+        "type": "ui_gauge",
+        "z": "21cff59813ffcb36",
+        "name": "Courant de fuite - Zone Laveuse",
+        "group": "ui_group_cab2",
+        "order": 1,
+        "gtype": "gage",
+        "title": "Zone Laveuse",
+        "label": "mA",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "200",
+        "colors": [
+            "#2ECC71",
+            "#F39C12",
+            "#E74C3C"
+        ],
+        "seg1": "50",
+        "seg2": "130",
+        "x": 1310,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "dbg_laveuse_gauge",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG Laveuse Gauge",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1500,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "dbg_laveuse_pub_dash",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG Laveuse Publish (dashboard)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1300,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "dbg_laveuse_pub_legacy",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG Laveuse Publish (legacy)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1320,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "dbg_laveuse_parser",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG Laveuse Parser",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1120,
+        "y": 430,
+        "wires": []
+    },
+    {
+        "id": "7d82a083506e0e05",
+        "type": "ui_chart",
+        "z": "21cff59813ffcb36",
+        "name": "Tendance - Zone Laveuse",
+        "group": "ui_group_cab2",
+        "order": 2,
+        "width": "",
+        "height": "",
+        "label": "Tendance (mA)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "200",
+        "removeOlder": "1",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": "",
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#ff7f0e",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000",
+            "#000000"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 1330,
+        "y": 420,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "58f660aab3685997",
+        "type": "ui_text",
+        "z": "21cff59813ffcb36",
+        "group": "ui_group_cab2",
+        "order": 3,
+        "name": "Statut Zone Laveuse",
+        "label": "Statut:",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1340,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "5e30a8ea84812fa5",
+        "type": "ui_text",
+        "z": "21cff59813ffcb36",
+        "group": "ui_group_cab2",
+        "order": 4,
+        "name": "Prediction Zone Laveuse",
+        "label": "Prediction:",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1350,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "0ce74a293a903262",
+        "type": "inject",
+        "z": "21cff59813ffcb36",
+        "name": "Simu LSM (5s)",
+        "repeat": "5",
+        "once": true,
+        "onceDelay": 1.4,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 540,
+        "wires": [
+            [
+                "d12184b879a48d23"
+            ]
+        ]
+    },
+    {
+        "id": "d12184b879a48d23",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Simuler capteur - LSM",
+        "func": "context.base = context.base || 14;\ncontext.base += (Math.random() - 0.48) * 1.4;\ncontext.base = Math.max(4, Math.min(context.base, 40));\nlet bruit = (Math.random() - 0.5) * 3.5;\nlet pic = (Math.random() < 0.025) ? (75 + Math.random() * 95) : 0;\nlet valeur = Math.max(0, context.base + bruit + pic);\nmsg.payload = { courant_mA: parseFloat(valeur.toFixed(1)) };\nmsg._source = 'sim';\nmsg.cabinet = 'LSM (Vernissage)';\nreturn msg;",
+        "outputs": 1,
+        "x": 420,
+        "y": 540,
+        "wires": [
+            [
+                "63101794004ada17"
+            ]
+        ]
+    },
+    {
+        "id": "5dd3a8431bab543a",
+        "type": "mqtt in",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT LSM",
+        "topic": "canpack/lsm/+",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "mqtt_broker1",
+        "inputs": 0,
+        "x": 190,
+        "y": 580,
+        "wires": [
+            [
+                "b415d6b81aa10b17"
+            ]
+        ]
+    },
+    {
+        "id": "b415d6b81aa10b17",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Parser payload - LSM",
+        "func": "let payload = msg.payload;\nif (typeof payload === 'string') { try { payload = JSON.parse(payload); } catch (e) { return null; } }\nif (typeof payload === 'number') { payload = { courant_mA: payload }; }\nmsg.payload = payload;\nmsg._source = 'mqtt';\nmsg.cabinet = 'LSM (Vernissage)';\nreturn msg;",
+        "outputs": 1,
+        "x": 420,
+        "y": 580,
+        "wires": [
+            [
+                "63101794004ada17",
+                "dbg_lsm_parser"
+            ]
+        ]
+    },
+    {
+        "id": "63101794004ada17",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Traitement, seuils & prediction - LSM",
+        "func": "let modeSimu = flow.get('simulation_mode');\nif (modeSimu === undefined) modeSimu = true;\nif ((modeSimu && msg._source !== 'sim') || (!modeSimu && msg._source !== 'mqtt')) { return [null,null,null,null,null,null]; }\nconst SEUIL_PRECOCE = 60, SEUIL_CRITIQUE = 150;\nconst NOM = 'LSM (Vernissage)';\nlet valeur = Number(msg.payload.courant_mA ?? msg.payload.courant ?? msg.payload.value ?? 0);\nlet ma = flow.get('ma_3') || []; ma.push(valeur); if (ma.length > 6) ma.shift(); flow.set('ma_3', ma);\nlet moyenne = ma.reduce((a,b)=>a+b,0) / ma.length;\nlet statut = 'normal', couleur = '#2ECC71';\nif (moyenne >= SEUIL_CRITIQUE) { statut = 'CRITIQUE'; couleur = '#E74C3C'; }\nelse if (moyenne >= SEUIL_PRECOCE) { statut = 'PRECOCE'; couleur = '#F39C12'; }\nlet hist = flow.get('hist_3') || []; hist.push({ t: Date.now(), v: moyenne }); if (hist.length > 12) hist.shift(); flow.set('hist_3', hist);\nlet pente = 0;\nif (hist.length >= 4) {\n  let n = hist.length, t0 = hist[0].t, sx=0, sy=0, sxy=0, sx2=0;\n  hist.forEach(p => { let x=(p.t-t0)/60000, y=p.v; sx+=x; sy+=y; sxy+=x*y; sx2+=x*x; });\n  let denom = n*sx2 - sx*sx;\n  pente = denom !== 0 ? (n*sxy - sx*sy)/denom : 0;\n}\nlet texte_prediction;\nif (pente > 0.5) {\n  let restant = SEUIL_CRITIQUE - moyenne;\n  let minutesRestantes = restant / pente;\n  texte_prediction = minutesRestantes > 0 && minutesRestantes < 1440 ? `<span>Hausse +${pente.toFixed(2)} mA/min - seuil critique estime dans ~${minutesRestantes.toFixed(0)} min</span>` : `<span>Hausse legere, pas d'echeance critique estimee</span>`;\n} else if (pente < -0.5) {\n  texte_prediction = `<span style='color:#2ECC71'>Tendance a la baisse (${pente.toFixed(2)} mA/min)</span>`;\n} else {\n  texte_prediction = `<span>Stable</span>`;\n}\nlet msgGauge = { payload: parseFloat(moyenne.toFixed(1)) };\nlet msgChart = { payload: parseFloat(moyenne.toFixed(1)), topic: NOM };\nlet msgStatus = { payload: `<span style='color:${couleur}; font-weight:bold;'>${statut}</span>` };\nlet msgPrediction = { payload: texte_prediction };\nlet msgSummary = { payload: { cabinet: NOM, courant_mA: parseFloat(valeur.toFixed(1)), moyenne: parseFloat(moyenne.toFixed(1)), statut: statut, horodatage: new Date().toISOString(), prediction: texte_prediction, couleur: couleur } };\nlet msgAlert = null;\nif (statut !== 'normal') {\n  msgAlert = { payload: { cabinet: NOM, niveau: statut, valeur_mA: parseFloat(moyenne.toFixed(1)), horodatage: new Date().toISOString() } };\n}\nreturn [msgGauge, msgChart, msgStatus, msgPrediction, msgSummary, msgAlert];",
+        "outputs": 6,
+        "x": 720,
+        "y": 560,
+        "wires": [
+            [
+                "65b1f63dc9e5297e",
+                "dbg_lsm_gauge"
+            ],
+            [
+                "d6830b32d3061f22"
+            ],
+            [
+                "287d7d8da977d082"
+            ],
+            [
+                "62a59b8cb9463135"
+            ],
+            [
+                "d308880f61b0be00",
+                "41b7f401705221f1"
+            ],
+            [
+                "2d7ff1fff3d67d95",
+                "2a3ada64bf5103ba"
+            ]
+        ]
+    },
+    {
+        "id": "41b7f401705221f1",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Publier LSM",
+        "func": "let raw = msg.payload || {};\nlet courant = Number(raw.courant_mA ?? raw.valeur ?? raw.courant ?? raw.value ?? 0);\nlet moyenne = Number(raw.moyenne ?? raw.valeur ?? raw.avg ?? raw.average ?? raw.moyenne_glissante ?? courant);\nlet statut = raw.statut ?? raw.status ?? raw.niveau ?? 'normal';\nlet horodatage = raw.horodatage ?? raw.timestamp ?? new Date().toISOString();\nlet couleur = raw.couleur ?? raw.color ?? (statut === 'CRITIQUE' ? '#E74C3C' : statut === 'PRECOCE' ? '#F39C12' : '#2ECC71');\nlet payload = { courant_mA: courant, moyenne: moyenne, statut: statut, horodatage: horodatage, prediction: raw.prediction ?? '', couleur: couleur };\nlet s = JSON.stringify(payload);\nlet msgDash = { ...msg, topic: 'canpack/lsm/dashboard', payload: s };\nlet msgLegacy = { ...msg, topic: 'canpack/lsm/fuite', payload: s };\nreturn [msgDash, msgLegacy];",
+        "outputs": 2,
+        "x": 650,
+        "y": 500,
+        "wires": [
+            [
+                "5c06d4c607bfc4bf",
+                "dbg_lsm_pub_dash"
+            ],
+            [
+                "c249197a49df39c5",
+                "dbg_lsm_pub_legacy"
+            ]
+        ]
+    },
+    {
+        "id": "5c06d4c607bfc4bf",
+        "type": "mqtt out",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT Out LSM Dashboard",
+        "topic": "canpack/lsm/dashboard",
+        "qos": "0",
+        "retain": true,
+        "broker": "mqtt_broker1",
+        "x": 880,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "c249197a49df39c5",
+        "type": "mqtt out",
+        "z": "21cff59813ffcb36",
+        "name": "MQTT Out LSM Legacy",
+        "topic": "canpack/lsm/fuite",
+        "qos": "0",
+        "retain": false,
+        "broker": "mqtt_broker1",
+        "x": 880,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "65b1f63dc9e5297e",
+        "type": "ui_gauge",
+        "z": "21cff59813ffcb36",
+        "name": "Courant de fuite - LSM",
+        "group": "a6a6d67b7764abc7",
+        "order": 1,
+        "gtype": "gage",
+        "title": "LSM (Vernissage)",
+        "label": "mA",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "200",
+        "colors": [
+            "#2ECC71",
+            "#F39C12",
+            "#E74C3C"
+        ],
+        "seg1": "60",
+        "seg2": "150",
+        "x": 1240,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "dbg_lsm_gauge",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG LSM Gauge",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1500,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "dbg_lsm_pub_dash",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG LSM Publish (dashboard)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1260,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "dbg_lsm_pub_legacy",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG LSM Publish (legacy)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1260,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "dbg_lsm_parser",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "DBG LSM Parser",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "x": 1120,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "d308880f61b0be00",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Mettre a jour vue d'ensemble",
+        "func": "let overview = global.get('overview') || {};\noverview[msg.payload.cabinet] = msg.payload;\nglobal.set('overview', overview);\nlet ordre = ['Body Maker', 'Zone Laveuse', 'LSM (Vernissage)'];\nlet html = ordre.map(nom => {\n  let e = overview[nom];\n  if (!e) return `<div>${nom} : en attente de donnees...</div>`;\n  return `<div style='color:${e.couleur}'><b>${e.cabinet}</b> : ${e.courant_mA} mA - ${e.statut}</div>`;\n}).join('');\nreturn { payload: html };",
+        "outputs": 1,
+        "x": 1180,
+        "y": 100,
+        "wires": [
+            [
+                "997b972bdfa0f7e4"
+            ]
+        ]
+    },
+    {
+        "id": "2d7ff1fff3d67d95",
+        "type": "function",
+        "z": "21cff59813ffcb36",
+        "name": "Journaliser alerte",
+        "func": "let alertes = global.get('alert_log') || [];\nalertes.unshift(msg.payload);\nif (alertes.length > 20) alertes.pop();\nglobal.set('alert_log', alertes);\nlet html = alertes.slice(0, 6).map(a => {\n  let couleur = a.niveau === 'CRITIQUE' ? '#E74C3C' : '#F39C12';\n  return `<div style='color:${couleur}'><b>${a.cabinet}</b> - ${a.niveau} - ${a.valeur_mA} mA - ${a.horodatage}</div>`;\n}).join('');\nlet msgDisplay = { payload: html };\nlet ligneCSV = `${msg.payload.horodatage},${msg.payload.cabinet},${msg.payload.niveau},${msg.payload.valeur_mA}\n`;\nlet msgCSV = { payload: ligneCSV };\nreturn [msgDisplay, msgCSV];",
+        "outputs": 2,
+        "x": 1190,
+        "y": 780,
+        "wires": [
+            [
+                "b999b834acdb9ba7"
+            ],
+            [
+                "7b305599df4b46a1"
+            ]
+        ]
+    },
+    {
+        "id": "b999b834acdb9ba7",
+        "type": "ui_text",
+        "z": "21cff59813ffcb36",
+        "group": "ui_group_alerts",
+        "order": 1,
+        "name": "Journal alertes",
+        "label": "Dernieres alertes:",
+        "format": "{{msg.payload}}",
+        "layout": "row",
+        "x": 1480,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "7b305599df4b46a1",
+        "type": "file",
+        "z": "21cff59813ffcb36",
+        "name": "CSV alertes",
+        "filename": "/data/canpack_isolation_alertes.csv",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 1470,
+        "y": 800,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2a3ada64bf5103ba",
+        "type": "debug",
+        "z": "21cff59813ffcb36",
+        "name": "Debug alertes",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 1060,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "ui_group_control",
+        "type": "ui_group",
+        "name": "Controle",
+        "tab": "ui_tab1",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "2018b022f19682ea",
+        "type": "ui_group",
+        "name": "Vue d'ensemble",
+        "tab": "ui_tab1",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "mqtt_broker1",
+        "type": "mqtt-broker",
+        "name": "Broker Canpack",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "compatmode": false,
+        "keepalive": "60",
+        "cleansession": true
+    },
+    {
+        "id": "ui_group_cab1",
+        "type": "ui_group",
+        "name": "Armoire 1",
+        "tab": "ui_tab1",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "ui_group_cab2",
+        "type": "ui_group",
+        "name": "Armoire 2",
+        "tab": "ui_tab1",
+        "order": 3,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "a6a6d67b7764abc7",
+        "type": "ui_group",
+        "name": "LSM (Vernissage)",
+        "tab": "ui_tab1",
+        "order": 5,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "ui_group_alerts",
+        "type": "ui_group",
+        "name": "Alertes & Journal",
+        "tab": "ui_tab1",
+        "order": 4,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "ui_tab1",
+        "type": "ui_tab",
+        "name": "Isolement - Armoires Canpack",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "8b10780d39c3e7d9",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6"
+        }
+    }
+]
