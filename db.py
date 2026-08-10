@@ -3,7 +3,15 @@ import sqlite3
 import threading
 from datetime import datetime, timedelta
 
+import mysql.connector
+
 DB_FILE = os.path.join(os.path.dirname(__file__), ".canpack_data.db")
+
+MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_USER = os.getenv("MYSQL_USER", "dashboard")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "canpack_isolation")
 
 # In-process lock to serialize write operations and avoid SQLITE_BUSY
 _WRITE_LOCK = threading.Lock()
@@ -79,12 +87,41 @@ def init_db(seed_demo_data=True):
         )
         """
     )
+    cursor.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS ux_alertes_unique ON alertes (armoire, horodatage, niveau, valeur_mA)"
+    )
     conn.commit()
 
     if seed_demo_data:
         _seed_sample_data(conn)
 
     return conn
+
+
+def get_mysql_connection(timeout: int = 5):
+    """Return a connected MySQL connection or None if unavailable."""
+    if not MYSQL_HOST or not MYSQL_USER or not MYSQL_DATABASE:
+        return None
+
+    try:
+        conn = mysql.connector.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            database=MYSQL_DATABASE,
+            connection_timeout=timeout,
+        )
+        return conn
+    except mysql.connector.Error:
+        return None
+
+
+def get_mysql_source():
+    """Return the configured MySQL host if reachable, else None."""
+    if get_mysql_connection() is not None:
+        return MYSQL_HOST
+    return None
 
 
 def _seed_sample_data(conn):

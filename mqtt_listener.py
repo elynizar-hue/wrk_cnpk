@@ -96,6 +96,7 @@ def _parse_payload(payload):
             "prediction": payload.get("prediction"),
             "couleur": payload.get("couleur", payload.get("color")),
             "horodatage": payload.get("horodatage", payload.get("timestamp")),
+            "_source": payload.get("_source"),
         }
 
     if isinstance(payload, (bytes, bytearray)):
@@ -119,6 +120,7 @@ def _parse_payload(payload):
                     "prediction": data.get("prediction"),
                     "couleur": data.get("couleur", data.get("color")),
                     "horodatage": data.get("horodatage", data.get("timestamp")),
+                    "_source": data.get("_source"),
                 }
             if isinstance(data, (int, float)):
                 return {"courant_mA": float(data), "moyenne": 0.0, "statut": "normal"}
@@ -149,6 +151,8 @@ def _on_message(client, userdata, msg):
 
     parsed = _parse_payload(msg.payload)
     if parsed is None:
+        return
+    if parsed.get("_source") == "node-red":
         return
 
     topics, seuil_precoce, seuil_critique = ARMOIRES[armoire]

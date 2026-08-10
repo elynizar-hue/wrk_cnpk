@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
 
-from db import get_read_connection, init_db, DB_FILE
+from db import get_read_connection, init_db, DB_FILE, get_mysql_connection, get_mysql_source
 from mqtt_listener import demarrer_listener, ARMOIRES, MQTT_BROKER, MQTT_PORT
 from report import generer_rapport_pdf
 
@@ -55,53 +55,84 @@ if listener is None:
 
 
 # ---- Fonctions de lecture des donnees ----
-def charger_dernieres_mesures():
+def _charger_avec_sqlite(query, params=()):
     conn = get_read_connection()
     try:
-        df = pd.read_sql_query(
-            """
-            SELECT armoire, courant_mA, moyenne, statut, horodatage
-            FROM mesures
-            WHERE id IN (SELECT MAX(id) FROM mesures GROUP BY armoire)
-            """,
-            conn,
-        )
+        return pd.read_sql_query(query, conn, params=params)
     finally:
         conn.close()
-    return df
+
+
+def _charger_avec_mysql(query, params=()):
+    conn = get_mysql_connection()
+    if conn is None:
+        return None
+    try:
+        df = pd.read_sql_query(query, conn, params=params)
+        return df
+    finally:
+        conn.close()
+
+
+def charger_dernieres_mesures():
+    mysql_df = _charger_avec_mysql(
+        "SELECT armoire, courant_mA, moyenne, statut, horodatage "
+        "FROM readings "
+        "WHERE id IN (SELECT MAX(id) FROM readings GROUP BY armoire)",
+    )
+    if mysql_df is not None and not mysql_df.empty:
+        mysql_df["horodatage"] = pd.to_datetime(mysql_df["horodatage"])
+        return mysql_df
+
+    return _charger_avec_sqlite(
+        """
+        SELECT armoire, courant_mA, moyenne, statut, horodatage
+        FROM mesures
+        WHERE id IN (SELECT MAX(id) FROM mesures GROUP BY armoire)
+        """,
+    )
 
 
 def charger_historique(armoire, depuis, jusqu_a):
-    conn = get_read_connection()
-    try:
-        df = pd.read_sql_query(
-            """
-            SELECT horodatage, courant_mA, moyenne, statut
-            FROM mesures
-            WHERE armoire = ? AND horodatage BETWEEN ? AND ?
-            ORDER BY horodatage ASC
-            """,
-            conn,
-            params=(armoire, depuis, jusqu_a),
-        )
-    finally:
-        conn.close()
+    mysql_df = _charger_avec_mysql(
+        "SELECT horodatage, courant_mA, moyenne, statut "
+        "FROM readings "
+        "WHERE armoire = %s AND horodatage BETWEEN %s AND %s "
+        "ORDER BY horodatage ASC",
+        params=(armoire, depuis, jusqu_a),
+    )
+    if mysql_df is not None and not mysql_df.empty:
+        mysql_df["horodatage"] = pd.to_datetime(mysql_df["horodatage"])
+        return mysql_df
+
+    df = _charger_avec_sqlite(
+        """
+        SELECT horodatage, courant_mA, moyenne, statut
+        FROM mesures
+        WHERE armoire = ? AND horodatage BETWEEN ? AND ?
+        ORDER BY horodatage ASC
+        """,
+        params=(armoire, depuis, jusqu_a),
+    )
     if not df.empty:
         df["horodatage"] = pd.to_datetime(df["horodatage"])
     return df
 
 
 def charger_alertes(limite=100):
-    conn = get_read_connection()
-    try:
-        df = pd.read_sql_query(
-            "SELECT horodatage, armoire, niveau, valeur_mA FROM alertes ORDER BY id DESC LIMIT ?",
-            conn,
-            params=(limite,),
-        )
-    finally:
-        conn.close()
-    return df
+    mysql_df = _charger_avec_mysql(
+        "SELECT horodatage, armoire, niveau, valeur_mA "
+        "FROM alerts ORDER BY id DESC LIMIT %s",
+        params=(limite,),
+    )
+    if mysql_df is not None and not mysql_df.empty:
+        mysql_df["horodatage"] = pd.to_datetime(mysql_df["horodatage"])
+        return mysql_df
+
+    return _charger_avec_sqlite(
+        "SELECT horodatage, armoire, niveau, valeur_mA FROM alertes ORDER BY id DESC LIMIT ?",
+        params=(limite,),
+    )
 
 
 def calculer_prediction(df, seuil_critique):
@@ -161,6 +192,8 @@ if st.sidebar.checkbox("Afficher diagnostics MQTT/DB"):
     st.sidebar.markdown("**Debug: DB & MQTT**")
     try:
         st.sidebar.write("DB file:", DB_FILE)
+        source = get_mysql_source()
+        st.sidebar.write("MySQL source:", source or "none")
         if os.path.exists(DB_FILE):
             st.sidebar.write("Taille (bytes):", os.path.getsize(DB_FILE))
             st.sidebar.write("Modifié:", datetime.utcfromtimestamp(os.path.getmtime(DB_FILE)).isoformat())
