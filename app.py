@@ -76,9 +76,9 @@ def _charger_avec_mysql(query, params=()):
 
 def charger_dernieres_mesures():
     mysql_df = _charger_avec_mysql(
-        "SELECT armoire, courant_mA, moyenne, statut, horodatage "
+        "SELECT cabinet AS armoire, courant_mA, moyenne, statut, horodatage "
         "FROM readings "
-        "WHERE id IN (SELECT MAX(id) FROM readings GROUP BY armoire)",
+        "WHERE id IN (SELECT MAX(id) FROM readings GROUP BY cabinet)",
     )
     if mysql_df is not None and not mysql_df.empty:
         mysql_df["horodatage"] = pd.to_datetime(mysql_df["horodatage"])
@@ -97,7 +97,7 @@ def charger_historique(armoire, depuis, jusqu_a):
     mysql_df = _charger_avec_mysql(
         "SELECT horodatage, courant_mA, moyenne, statut "
         "FROM readings "
-        "WHERE armoire = %s AND horodatage BETWEEN %s AND %s "
+        "WHERE cabinet = %s AND horodatage BETWEEN %s AND %s "
         "ORDER BY horodatage ASC",
         params=(armoire, depuis, jusqu_a),
     )
@@ -121,7 +121,7 @@ def charger_historique(armoire, depuis, jusqu_a):
 
 def charger_alertes(limite=100):
     mysql_df = _charger_avec_mysql(
-        "SELECT horodatage, armoire, niveau, valeur_mA "
+        "SELECT horodatage, cabinet AS armoire, niveau, valeur_mA "
         "FROM alerts ORDER BY id DESC LIMIT %s",
         params=(limite,),
     )

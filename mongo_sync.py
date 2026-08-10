@@ -61,17 +61,18 @@ def ensure_mysql_schema(conn):
     conn.commit()
 
 
-def sync_table(sqlite_conn, mysql_conn, sqlite_table, mysql_table, columns, where_clause="", params=()):
+def sync_table(sqlite_conn, mysql_conn, sqlite_table, mysql_table, sqlite_columns, mysql_columns, where_clause="", params=()):
     sqlite_cursor = sqlite_conn.cursor()
     mysql_cursor = mysql_conn.cursor()
 
     mysql_cursor.execute(f"SELECT MAX(horodatage) FROM {mysql_table}")
     last_remote = mysql_cursor.fetchone()[0]
 
-    query = f"SELECT {', '.join(columns)} FROM {sqlite_table}"
-    if last_remote:
+    query = f"SELECT {', '.join(sqlite_columns)} FROM {sqlite_table}"
+    if last_remote is not None:
+        last_remote_str = last_remote.isoformat() if hasattr(last_remote, "isoformat") else str(last_remote)
         query += " WHERE horodatage > ?"
-        params = params + (last_remote,)
+        params = params + (last_remote_str,)
     query += " ORDER BY horodatage ASC"
 
     sqlite_cursor.execute(query, params)
@@ -80,8 +81,8 @@ def sync_table(sqlite_conn, mysql_conn, sqlite_table, mysql_table, columns, wher
         print(f"{mysql_table}: aucune donnée nouvelle à synchroniser")
         return
 
-    placeholders = ", ".join(["%s"] * len(columns))
-    insert_sql = f"INSERT IGNORE INTO {mysql_table} ({', '.join(columns)}) VALUES ({placeholders})"
+    placeholders = ", ".join(["%s"] * len(mysql_columns))
+    insert_sql = f"INSERT IGNORE INTO {mysql_table} ({', '.join(mysql_columns)}) VALUES ({placeholders})"
     mysql_cursor.executemany(insert_sql, rows)
     mysql_conn.commit()
     print(f"{mysql_table}: synchronisé {len(rows)} lignes")
@@ -102,13 +103,15 @@ def main():
             "mesures",
             "readings",
             ["armoire", "courant_mA", "moyenne", "statut", "horodatage"],
+            ["cabinet", "courant_mA", "moyenne", "statut", "horodatage"],
         )
         sync_table(
             sqlite_conn,
             mysql_conn,
             "alertes",
             "alerts",
-            ["armoire", "niveau", "valeur_mA", "horodatage"],
+            ["horodatage", "armoire", "niveau", "valeur_mA"],
+            ["horodatage", "cabinet", "niveau", "valeur_mA"],
         )
     except mysql.connector.Error as err:
         print(f"Erreur MySQL: {err}")
