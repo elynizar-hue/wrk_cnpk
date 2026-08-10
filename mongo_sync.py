@@ -5,11 +5,12 @@ from datetime import datetime
 import mysql.connector
 
 DB_FILE = os.path.join(os.path.dirname(__file__), ".canpack_data.db")
-MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
-MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
-MYSQL_USER = os.getenv("MYSQL_USER", "dashboard")
+MYSQL_HOST = os.getenv("MYSQL_HOST", "canpack-elynizar-dd70.h.aivencloud.com")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "10132"))
+MYSQL_USER = os.getenv("MYSQL_USER", "avnadmin")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "canpack_isolation")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "defaultdb")
+MYSQL_SSL_MODE = os.getenv("MYSQL_SSL_MODE", "REQUIRED")
 
 
 def get_sqlite_connection():
@@ -24,6 +25,7 @@ def get_mysql_connection():
         password=MYSQL_PASSWORD,
         database=MYSQL_DATABASE,
         autocommit=False,
+        ssl_mode=MYSQL_SSL_MODE,
     )
 
 

@@ -1205,7 +1205,7 @@
         "name": "Local MySQL",
         "host": "localhost",
         "port": "3306",
-        "db": "canpack_isolation",
+        "db": "defaultdb",
         "tz": "",
         "charset": "UTF8"
     },
