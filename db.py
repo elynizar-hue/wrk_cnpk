@@ -10,7 +10,7 @@ DB_FILE = os.path.join(os.path.dirname(__file__), ".canpack_data.db")
 MYSQL_HOST = os.getenv("MYSQL_HOST", "canpack-elynizar-dd70.h.aivencloud.com")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", "10132"))
 MYSQL_USER = os.getenv("MYSQL_USER", "avnadmin")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "AVNS_AVtS75AXF4DJYreklu-")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "defaultdb")
 MYSQL_SSL_MODE = os.getenv("MYSQL_SSL_MODE", "REQUIRED")
 
