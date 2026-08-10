@@ -39,6 +39,24 @@ Les topics attendus par l'application sont de type :
 
 Le listener Python souscrit uniquement aux topics `/dashboard` pour éviter de mélanger les anciens topics de fuite.
 
+### Node-RED MySQL et tunnel SSL
+
+Le noeud `node-red-node-mysql` ne supporte pas SSL/TLS directement.
+Pour connecter Node-RED à Aiven (qui nécessite SSL), utilisez le tunnel local inclus :
+
+1. Installer la dépendance proxy :
+   ```bash
+   cd mysql_tunnel && npm install
+   ```
+2. Lancer le tunnel (dans un terminal séparé) :
+   ```bash
+   set MYSQL_PASSWORD=AVNS_AVtS75AXF4DJYreklu-
+   cd mysql_tunnel && npm start
+   ```
+3. Dans Node-RED, le noeud MySQL est configuré sur `127.0.0.1:3306`.
+
+Le proxy écoute en local et transfère les requêtes vers Aiven avec SSL.
+
 ### Schéma MySQL recommandé
 ```sql
 CREATE TABLE readings (

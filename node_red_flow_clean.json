@@ -1191,8 +1191,8 @@
         "id": "mysql_db_config",
         "type": "MySQLdatabase",
         "name": "Aiven MySQL",
-        "host": "canpack-elynizar-dd70.h.aivencloud.com",
-        "port": "10132",
+        "host": "127.0.0.1",
+        "port": "3306",
         "db": "defaultdb",
         "tz": "",
         "charset": "UTF8"

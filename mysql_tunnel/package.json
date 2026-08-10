@@ -1,0 +1,12 @@
+{
+  "name": "canpack-mysql-tunnel",
+  "version": "1.0.0",
+  "description": "Local SSL tunnel proxy for Node-RED to connect to Aiven MySQL",
+  "private": true,
+  "scripts": {
+    "start": "node mysql_tunnel.js"
+  },
+  "dependencies": {
+    "mysql2": "^3.14.0"
+  }
+}
