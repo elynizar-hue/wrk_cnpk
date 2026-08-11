@@ -15,7 +15,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
 
-from db import get_read_connection, init_db, DB_FILE, get_mysql_connection, get_mysql_source
+from db import get_read_connection, init_db, DB_FILE, get_mysql_connection, get_mysql_source, create_mysql_schema_if_needed
 from mqtt_listener import demarrer_listener, ARMOIRES, MQTT_BROKER, MQTT_PORT
 from report import generer_rapport_pdf
 
@@ -32,6 +32,7 @@ COULEURS_STATUT = {"normal": "#2ECC71", "PRECOCE": "#F39C12", "CRITIQUE": "#E74C
 @st.cache_resource
 def _listener_singleton():
     init_db(seed_demo_data=False)
+    create_mysql_schema_if_needed()
     return demarrer_listener()
 
 listener = _listener_singleton()

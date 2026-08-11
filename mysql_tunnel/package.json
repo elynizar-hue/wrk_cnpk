@@ -6,7 +6,5 @@
   "scripts": {
     "start": "node mysql_tunnel.js"
   },
-  "dependencies": {
-    "mysql2": "^3.14.0"
-  }
+  "dependencies": {}
 }

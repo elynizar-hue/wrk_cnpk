@@ -135,6 +135,48 @@ def get_mysql_source():
     return None
 
 
+def create_mysql_schema_if_needed():
+    conn = get_mysql_connection()
+    if conn is None:
+        return None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS readings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                cabinet VARCHAR(50),
+                courant_mA FLOAT,
+                moyenne FLOAT,
+                statut VARCHAR(20),
+                horodatage DATETIME,
+                INDEX idx_cabinet_time (cabinet, horodatage),
+                UNIQUE KEY ux_readings_unique (cabinet, horodatage, courant_mA, moyenne, statut)
+            )
+            """
+        )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS alerts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                cabinet VARCHAR(50),
+                niveau VARCHAR(20),
+                valeur_mA FLOAT,
+                horodatage DATETIME,
+                INDEX idx_cabinet_time (cabinet, horodatage),
+                UNIQUE KEY ux_alerts_unique (cabinet, horodatage, niveau, valeur_mA)
+            )
+            """
+        )
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        if conn:
+            conn.close()
+    return True
+
+
 def _seed_sample_data(conn):
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM mesures")
