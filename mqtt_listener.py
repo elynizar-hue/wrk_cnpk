@@ -152,9 +152,6 @@ def _on_message(client, userdata, msg):
     parsed = _parse_payload(msg.payload)
     if parsed is None:
         return
-    if parsed.get("_source") == "node-red":
-        return
-
     topics, seuil_precoce, seuil_critique = ARMOIRES[armoire]
     statut = _status_from_values(parsed["courant_mA"], parsed["moyenne"], seuil_precoce, seuil_critique)
     horodatage = parsed.get("horodatage") or datetime.utcnow().isoformat()
@@ -167,7 +164,7 @@ def _on_message(client, userdata, msg):
             (armoire, parsed["courant_mA"], parsed["moyenne"], statut, horodatage),
         )
         _log(f"Inserted mesure: {armoire} {parsed.get('courant_mA')} mA statut={statut} horodatage={horodatage}")
-        if statut in {"PRECOCE", "CRITIQUE"}:
+        if statut in {"PRECOCE", "CRITIQUE"} and parsed.get("_source") != "node-red":
             execute_write(
                 "INSERT INTO alertes (horodatage, armoire, niveau, valeur_mA) VALUES (?, ?, ?, ?)",
                 (horodatage, armoire, statut, parsed["courant_mA"]),
