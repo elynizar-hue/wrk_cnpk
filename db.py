@@ -122,7 +122,6 @@ def get_mysql_connection(timeout: int = 5):
             password=MYSQL_PASSWORD,
             database=MYSQL_DATABASE,
             connection_timeout=timeout,
-            ssl_mode=MYSQL_SSL_MODE,
         )
         return conn
     except mysql.connector.Error:

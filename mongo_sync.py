@@ -25,7 +25,6 @@ def get_mysql_connection():
         password=MYSQL_PASSWORD,
         database=MYSQL_DATABASE,
         autocommit=False,
-        ssl_mode=MYSQL_SSL_MODE,
     )
 
 
