@@ -50,7 +50,7 @@ Pour connecter Node-RED à Aiven (qui nécessite SSL), utilisez le tunnel local 
    ```
 2. Lancer le tunnel (dans un terminal séparé) :
    ```bash
-   set MYSQL_PASSWORD=AVNS_AVtS75AXF4DJYreklu-
+   set MYSQL_PASSWORD=<votre_mot_de_passe_aiven>
    cd mysql_tunnel && npm start
    ```
 3. Dans Node-RED, le noeud MySQL est configuré sur `127.0.0.1:3306`.

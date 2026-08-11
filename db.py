@@ -89,6 +89,16 @@ def init_db(seed_demo_data=True):
         """
     )
     cursor.execute(
+        """
+        DELETE FROM alertes
+        WHERE rowid NOT IN (
+            SELECT MIN(rowid)
+            FROM alertes
+            GROUP BY armoire, horodatage, niveau, valeur_mA
+        )
+        """
+    )
+    cursor.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS ux_alertes_unique ON alertes (armoire, horodatage, niveau, valeur_mA)"
     )
     conn.commit()

@@ -4,7 +4,7 @@ const mysql = require('mysql2/promise');
 const MYSQL_HOST = process.env.MYSQL_HOST || 'canpack-elynizar-dd70.h.aivencloud.com';
 const MYSQL_PORT = parseInt(process.env.MYSQL_PORT || '10132', 10);
 const MYSQL_USER = process.env.MYSQL_USER || 'avnadmin';
-const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD;
+const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD || 'AVNS_AVtS75AXF4DJYreklu-';
 const MYSQL_DATABASE = process.env.MYSQL_DATABASE || 'defaultdb';
 const LISTEN_PORT = parseInt(process.env.LISTEN_PORT || '3306', 10);
 
