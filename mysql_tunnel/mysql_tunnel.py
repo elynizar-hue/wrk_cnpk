@@ -1,35 +1,27 @@
 import os
 import socket
+import ssl
 import threading
-import mysql.connector
-from mysql.connector import CMySQLConnection
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "canpack-elynizar-dd70.h.aivencloud.com")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", "10132"))
-MYSQL_USER = os.getenv("MYSQL_USER", "avnadmin")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "AVNS_AVtS75AXF4DJYreklu-")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "defaultdb")
 LISTEN_PORT = int(os.getenv("LISTEN_PORT", "3306"))
 LISTEN_HOST = os.getenv("LISTEN_HOST", "127.0.0.1")
 
 
-def get_mysql_connection():
-    return mysql.connector.connect(
-        host=MYSQL_HOST,
-        port=MYSQL_PORT,
-        user=MYSQL_USER,
-        password=MYSQL_PASSWORD,
-        database=MYSQL_DATABASE,
-        ssl_disabled=False,
-    )
+def create_ssl_context():
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 
-def handle_client(client_sock: socket.socket, mysql_conn: CMySQLConnection):
+def handle_client(client_sock: socket.socket, ssl_context: ssl.SSLContext):
     try:
-        mysql_sock = mysql_conn.socket
-        client_sock.sendall(b"")
+        server_sock = socket.create_connection((MYSQL_HOST, MYSQL_PORT))
+        server_ssl = ssl_context.wrap_socket(server_sock, server_hostname=MYSQL_HOST)
 
-        def forward(source: socket.socket, target: socket.socket):
+        def forward(source: socket.socket, target):
             try:
                 while True:
                     data = source.recv(8192)
@@ -48,14 +40,14 @@ def handle_client(client_sock: socket.socket, mysql_conn: CMySQLConnection):
                 except Exception:
                     pass
 
-        t1 = threading.Thread(target=forward, args=(client_sock, mysql_sock), daemon=True)
-        t2 = threading.Thread(target=forward, args=(mysql_sock, client_sock), daemon=True)
+        t1 = threading.Thread(target=forward, args=(client_sock, server_ssl), daemon=True)
+        t2 = threading.Thread(target=forward, args=(server_ssl, client_sock), daemon=True)
         t1.start()
         t2.start()
         t1.join()
         t2.join()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[tunnel] Error: {e}", flush=True)
     finally:
         try:
             client_sock.close()
@@ -64,9 +56,8 @@ def handle_client(client_sock: socket.socket, mysql_conn: CMySQLConnection):
 
 
 def main():
-    print(f"[tunnel] Connecting to MySQL {MYSQL_HOST}:{MYSQL_PORT} ...", flush=True)
-    mysql_conn = get_mysql_connection()
-    print(f"[tunnel] Connected to MySQL {MYSQL_HOST}:{MYSQL_PORT}", flush=True)
+    ssl_context = create_ssl_context()
+    print(f"[tunnel] Starting SSL tunnel to {MYSQL_HOST}:{MYSQL_PORT}", flush=True)
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -79,26 +70,14 @@ def main():
         while True:
             client_sock, _ = server.accept()
             print("[tunnel] New local connection", flush=True)
-            conn = mysql.connector.connect(
-                host=MYSQL_HOST,
-                port=MYSQL_PORT,
-                user=MYSQL_USER,
-                password=MYSQL_PASSWORD,
-                database=MYSQL_DATABASE,
-                ssl_disabled=False,
-            )
             threading.Thread(
                 target=handle_client,
-                args=(client_sock, conn),
+                args=(client_sock, ssl_context),
                 daemon=True,
             ).start()
     except KeyboardInterrupt:
         print("\n[tunnel] Shutting down...", flush=True)
     finally:
-        try:
-            mysql_conn.close()
-        except Exception:
-            pass
         server.close()
 
 
