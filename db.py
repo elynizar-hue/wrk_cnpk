@@ -177,6 +177,50 @@ def create_mysql_schema_if_needed():
     return True
 
 
+def insert_mysql_reading(armoire, courant_mA, moyenne, statut, horodatage):
+    """Insert a reading into MySQL. Best-effort; never raises."""
+    conn = get_mysql_connection()
+    if conn is None:
+        return
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT IGNORE INTO readings (cabinet, courant_mA, moyenne, statut, horodatage)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (armoire, courant_mA, moyenne, statut, horodatage),
+        )
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        if conn:
+            conn.close()
+
+
+def insert_mysql_alert(armoire, niveau, valeur_mA, horodatage):
+    """Insert an alert into MySQL. Best-effort; never raises."""
+    conn = get_mysql_connection()
+    if conn is None:
+        return
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT IGNORE INTO alerts (cabinet, niveau, valeur_mA, horodatage)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (armoire, niveau, valeur_mA, horodatage),
+        )
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        if conn:
+            conn.close()
+
+
 def _seed_sample_data(conn):
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM mesures")

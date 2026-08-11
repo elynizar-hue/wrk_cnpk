@@ -5,7 +5,7 @@ import traceback
 
 import paho.mqtt.client as mqtt
 
-from db import get_connection, init_db, execute_write
+from db import get_connection, init_db, execute_write, insert_mysql_reading, insert_mysql_alert
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "mqtt_listener.log")
 
@@ -164,11 +164,13 @@ def _on_message(client, userdata, msg):
             (armoire, parsed["courant_mA"], parsed["moyenne"], statut, horodatage),
         )
         _log(f"Inserted mesure: {armoire} {parsed.get('courant_mA')} mA statut={statut} horodatage={horodatage}")
+        insert_mysql_reading(armoire, parsed["courant_mA"], parsed["moyenne"], statut, horodatage)
         if statut in {"PRECOCE", "CRITIQUE"} and parsed.get("_source") != "node-red":
             execute_write(
                 "INSERT INTO alertes (horodatage, armoire, niveau, valeur_mA) VALUES (?, ?, ?, ?)",
                 (horodatage, armoire, statut, parsed["courant_mA"]),
             )
+            insert_mysql_alert(armoire, statut, parsed["courant_mA"], horodatage)
             _log(f"Inserted alerte: {armoire} niveau={statut} valeur={parsed.get('courant_mA')}")
     except Exception:
         _log("execute_write failed, falling back to raw connection:\n" + traceback.format_exc())

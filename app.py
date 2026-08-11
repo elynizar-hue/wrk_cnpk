@@ -9,11 +9,14 @@ import os
 import tempfile
 import time
 from datetime import datetime, timedelta
+import warnings
 
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
+
+warnings.filterwarnings("ignore", message="pandas only supports SQLAlchemy connectable")
 
 from db import get_read_connection, init_db, DB_FILE, get_mysql_connection, get_mysql_source, create_mysql_schema_if_needed
 from mqtt_listener import demarrer_listener, ARMOIRES, MQTT_BROKER, MQTT_PORT

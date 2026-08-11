@@ -197,8 +197,7 @@
       ],
       [
         "cb80c06f8cdbef69",
-        "aa6896c886b24e66",
-        "mysql_bodymaker_transform"
+        "aa6896c886b24e66"
       ],
       [
         "ca699036f38b399e",
@@ -511,8 +510,7 @@
       ],
       [
         "cb80c06f8cdbef69",
-        "69a51b7d97d11364",
-        "mysql_laveuse_transform"
+        "69a51b7d97d11364"
       ],
       [
         "ca699036f38b399e",
@@ -809,30 +807,29 @@
     "outputs": 6,
     "x": 720,
     "y": 560,
-      "wires": [
-        [
-          "55a2fcae854ae640",
-          "4897aea55e99db3a"
-        ],
-        [
-          "b14ca8109a7a5735"
-        ],
-        [
-          "c7d5c025fa27e13e"
-        ],
-        [
-          "fa6c77357b31a18c"
-        ],
-        [
-          "cb80c06f8cdbef69",
-          "bd382a3cdc9966da",
-          "mysql_lsm_transform"
-        ],
-        [
-          "ca699036f38b399e",
-          "bcfb9170667c032a"
-        ]
+    "wires": [
+      [
+        "55a2fcae854ae640",
+        "4897aea55e99db3a"
+      ],
+      [
+        "b14ca8109a7a5735"
+      ],
+      [
+        "c7d5c025fa27e13e"
+      ],
+      [
+        "fa6c77357b31a18c"
+      ],
+      [
+        "cb80c06f8cdbef69",
+        "bd382a3cdc9966da"
+      ],
+      [
+        "ca699036f38b399e",
+        "bcfb9170667c032a"
       ]
+    ]
   },
   {
     "id": "bd382a3cdc9966da",
@@ -1064,9 +1061,7 @@
       [
         "a10f1d8ac765a860"
       ],
-      [
-        "mysql_alerts"
-      ]
+      []
     ]
   },
   {
@@ -1190,121 +1185,6 @@
     "disp": true,
     "width": "12",
     "collapse": false
-  },
-  {
-    "id": "mysql_bodymaker_transform",
-    "type": "function",
-    "z": "296ba49136669a8b",
-    "name": "MySQL Body Maker payload",
-    "func": "msg.topic = \"INSERT INTO readings (cabinet, courant_mA, moyenne, statut, horodatage) VALUES (?, ?, ?, ?, ?)\";\nmsg.payload = [msg.payload.cabinet, msg.payload.courant_mA, msg.payload.moyenne, msg.payload.statut, msg.payload.horodatage];\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 1030,
-    "y": 220,
-    "wires": [
-      [
-        "mysql_bodymaker"
-      ]
-    ]
-  },
-  {
-    "id": "mysql_laveuse_transform",
-    "type": "function",
-    "z": "296ba49136669a8b",
-    "name": "MySQL Zone Laveuse payload",
-    "func": "msg.topic = \"INSERT INTO readings (cabinet, courant_mA, moyenne, statut, horodatage) VALUES (?, ?, ?, ?, ?)\";\nmsg.payload = [msg.payload.cabinet, msg.payload.courant_mA, msg.payload.moyenne, msg.payload.statut, msg.payload.horodatage];\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 1040,
-    "y": 420,
-    "wires": [
-      [
-        "mysql_laveuse"
-      ]
-    ]
-  },
-  {
-    "id": "mysql_lsm_transform",
-    "type": "function",
-    "z": "296ba49136669a8b",
-    "name": "MySQL LSM payload",
-    "func": "msg.topic = \"INSERT INTO readings (cabinet, courant_mA, moyenne, statut, horodatage) VALUES (?, ?, ?, ?, ?)\";\nmsg.payload = [msg.payload.cabinet, msg.payload.courant_mA, msg.payload.moyenne, msg.payload.statut, msg.payload.horodatage];\nreturn msg;",
-    "outputs": 1,
-    "noerr": 0,
-    "initialize": "",
-    "finalize": "",
-    "libs": [],
-    "x": 1040,
-    "y": 620,
-    "wires": [
-      [
-        "mysql_lsm"
-      ]
-    ]
-  },
-  {
-    "id": "mysql_db_config",
-    "type": "MySQLdatabase",
-    "name": "Aiven MySQL",
-    "host": "127.0.0.1",
-    "port": "3306",
-    "db": "defaultdb",
-    "tz": "",
-    "charset": "UTF8"
-  },
-  {
-    "id": "mysql_bodymaker",
-    "type": "mysql",
-    "z": "296ba49136669a8b",
-    "name": "MySQL insert Body Maker",
-    "mydb": "mysql_db_config",
-    "x": 1260,
-    "y": 220,
-    "wires": [
-      []
-    ]
-  },
-  {
-    "id": "mysql_laveuse",
-    "type": "mysql",
-    "z": "296ba49136669a8b",
-    "name": "MySQL insert Zone Laveuse",
-    "mydb": "mysql_db_config",
-    "x": 1260,
-    "y": 420,
-    "wires": [
-      []
-    ]
-  },
-  {
-    "id": "mysql_lsm",
-    "type": "mysql",
-    "z": "296ba49136669a8b",
-    "name": "MySQL insert LSM",
-    "mydb": "mysql_db_config",
-    "x": 1260,
-    "y": 620,
-    "wires": [
-      []
-    ]
-  },
-  {
-    "id": "mysql_alerts",
-    "type": "mysql",
-    "z": "296ba49136669a8b",
-    "name": "MySQL insert Alerts",
-    "mydb": "mysql_db_config",
-    "x": 1260,
-    "y": 780,
-    "wires": [
-      []
-    ]
   },
   {
     "id": "ui_tab1",
