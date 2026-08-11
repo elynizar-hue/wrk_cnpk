@@ -165,7 +165,7 @@ def _on_message(client, userdata, msg):
         )
         _log(f"Inserted mesure: {armoire} {parsed.get('courant_mA')} mA statut={statut} horodatage={horodatage}")
         insert_mysql_reading(armoire, parsed["courant_mA"], parsed["moyenne"], statut, horodatage)
-        if statut in {"PRECOCE", "CRITIQUE"} and parsed.get("_source") != "node-red":
+        if statut in {"PRECOCE", "CRITIQUE"}:
             execute_write(
                 "INSERT INTO alertes (horodatage, armoire, niveau, valeur_mA) VALUES (?, ?, ?, ?)",
                 (horodatage, armoire, statut, parsed["courant_mA"]),
