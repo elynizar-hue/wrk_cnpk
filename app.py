@@ -59,6 +59,7 @@ if listener is None:
 
 
 # ---- Fonctions de lecture des donnees ----
+@st.cache_data(ttl=5)
 def _charger_avec_sqlite(query, params=()):
     conn = get_read_connection()
     try:
@@ -67,6 +68,7 @@ def _charger_avec_sqlite(query, params=()):
         conn.close()
 
 
+@st.cache_data(ttl=5)
 def _charger_avec_mysql(query, params=()):
     conn = get_mysql_connection()
     if conn is None:
@@ -81,11 +83,18 @@ def _charger_avec_mysql(query, params=()):
         conn.close()
 
 
+@st.cache_data(ttl=5)
 def charger_dernieres_mesures():
     mysql_df = _charger_avec_mysql(
-        "SELECT cabinet AS armoire, courant_mA, moyenne, statut, horodatage "
-        "FROM readings "
-        "WHERE id IN (SELECT MAX(id) FROM readings GROUP BY cabinet)",
+        """
+        SELECT r.cabinet AS armoire, r.courant_mA, r.moyenne, r.statut, r.horodatage
+        FROM readings r
+        JOIN (
+            SELECT cabinet, MAX(id) AS max_id
+            FROM readings
+            GROUP BY cabinet
+        ) latest ON r.id = latest.max_id
+        """
     )
     if mysql_df is not None and not mysql_df.empty:
         mysql_df["horodatage"] = pd.to_datetime(mysql_df["horodatage"])
@@ -100,7 +109,18 @@ def charger_dernieres_mesures():
     )
 
 
+def _round_iso_to_minute(iso_str):
+    try:
+        dt = datetime.fromisoformat(iso_str)
+        return dt.replace(second=0, microsecond=0).isoformat()
+    except Exception:
+        return iso_str
+
+
+@st.cache_data(ttl=5)
 def charger_historique(armoire, depuis, jusqu_a):
+    depuis = _round_iso_to_minute(depuis)
+    jusqu_a = _round_iso_to_minute(jusqu_a)
     mysql_df = _charger_avec_mysql(
         "SELECT horodatage, courant_mA, moyenne, statut "
         "FROM readings "
@@ -126,6 +146,7 @@ def charger_historique(armoire, depuis, jusqu_a):
     return df
 
 
+@st.cache_data(ttl=5)
 def charger_alertes(limite=100):
     mysql_df = _charger_avec_mysql(
         "SELECT horodatage, cabinet AS armoire, niveau, valeur_mA "
@@ -184,7 +205,7 @@ plage_deltas = {
 depuis = (datetime.utcnow() - plage_deltas[plage]).isoformat()
 jusqu_a = datetime.utcnow().isoformat()
 
-rafraichissement = st.sidebar.slider("Rafraîchissement (secondes)", 3, 30, 5)
+rafraichissement = st.sidebar.slider("Rafraîchissement (secondes)", 5, 60, 10)
 auto_refresh = st.sidebar.checkbox("Rafraîchissement automatique", value=True)
 
 st.sidebar.divider()
