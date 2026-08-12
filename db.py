@@ -1,6 +1,7 @@
 ﻿import os
 import sqlite3
 import threading
+import time
 from datetime import datetime, timedelta
 
 import mysql.connector
@@ -28,6 +29,21 @@ MYSQL_SSL_MODE = os.getenv("MYSQL_SSL_MODE", "REQUIRED")
 _WRITE_LOCK = threading.Lock()
 
 
+def _retry_on_locked(func, max_attempts=3, delay=0.5):
+    """Retry a SQLite operation when the database is temporarily locked."""
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return func()
+        except sqlite3.OperationalError as exc:
+            last_error = exc
+            if "database is locked" in str(exc).lower() and attempt < max_attempts:
+                time.sleep(delay * attempt)
+                continue
+            raise
+    raise last_error
+
+
 def get_connection(timeout: float = 30.0):
     """Return a new sqlite3 connection configured for writes.
 
@@ -36,7 +52,7 @@ def get_connection(timeout: float = 30.0):
     conn = sqlite3.connect(DB_FILE, timeout=timeout, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     try:
-        conn.execute("PRAGMA busy_timeout = 5000")
+        conn.execute("PRAGMA busy_timeout = 30000")
         conn.execute("PRAGMA journal_mode = WAL")
         conn.execute("PRAGMA synchronous = NORMAL")
     except Exception:
@@ -50,7 +66,7 @@ def get_read_connection(timeout: float = 60.0):
     conn = sqlite3.connect(uri, uri=True, timeout=timeout, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     try:
-        conn.execute("PRAGMA busy_timeout = 10000")
+        conn.execute("PRAGMA busy_timeout = 30000")
     except Exception:
         pass
     return conn
@@ -61,15 +77,18 @@ def execute_write(sql: str, params: tuple = ()):  # helper to serialize writes
 
     Returns the sqlite3.Cursor for the executed statement.
     """
-    with _WRITE_LOCK:
-        conn = get_connection()
-        try:
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            conn.commit()
-            return cur
-        finally:
-            conn.close()
+    def _do():
+        with _WRITE_LOCK:
+            conn = get_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute(sql, params)
+                conn.commit()
+                return cur
+            finally:
+                conn.close()
+
+    return _retry_on_locked(_do)
 
 
 def init_db(seed_demo_data=True):

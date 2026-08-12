@@ -61,11 +61,19 @@ if listener is None:
 # ---- Fonctions de lecture des donnees ----
 @st.cache_data(ttl=2)
 def _charger_avec_sqlite(query, params=()):
-    conn = get_read_connection()
+    def _do():
+        conn = get_read_connection()
+        try:
+            return pd.read_sql_query(query, conn, params=params)
+        finally:
+            conn.close()
     try:
-        return pd.read_sql_query(query, conn, params=params)
-    finally:
-        conn.close()
+        return _do()
+    except sqlite3.OperationalError as exc:
+        if "database is locked" in str(exc).lower():
+            time.sleep(0.5)
+            return _do()
+        raise
 
 
 @st.cache_data(ttl=2)
