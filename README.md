@@ -19,6 +19,21 @@ Le projet utilise une valeur par défaut publique : `broker.hivemq.com:1883`.
 - `MYSQL_SSL_MODE`: mode SSL MySQL (`REQUIRED` par défaut pour Aiven)
 
 Exemple pour Streamlit Cloud ou un autre service :
+
+**Fichier `.streamlit/secrets.toml` :**
+```toml
+MQTT_BROKER = "broker.hivemq.com"
+MQTT_PORT = 1883
+MQTT_PREFIX = "canpack"
+
+MYSQL_HOST = "canpack-elynizar-dd70.h.aivencloud.com"
+MYSQL_PORT = 10132
+MYSQL_USER = "avnadmin"
+MYSQL_PASSWORD = "<votre_mot_de_passe_aiven>"
+MYSQL_DATABASE = "defaultdb"
+```
+
+**Ou via variables d'environnement :**
 - `MQTT_BROKER = broker.hivemq.com`
 - `MQTT_PORT = 1883`
 - `MQTT_PREFIX = canpack`
@@ -27,7 +42,6 @@ Exemple pour Streamlit Cloud ou un autre service :
 - `MYSQL_USER = avnadmin`
 - `MYSQL_PASSWORD = <secret>`
 - `MYSQL_DATABASE = defaultdb`
-- `MYSQL_SSL_MODE = REQUIRED`
 
 ### Node-RED
 Installez `node-red-node-mysql` dans Node-RED.

@@ -21,9 +21,19 @@ def _log(line: str):
 
 # Default to a public MQTT broker when no broker is configured by environment.
 # In cloud deployments, `localhost` is not reachable from outside the host.
-MQTT_BROKER = os.getenv("MQTT_BROKER") or "broker.hivemq.com"
-MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
-MQTT_PREFIX = os.getenv("MQTT_PREFIX", "canpack").strip().strip("/")
+def _get_secret(key, default=None):
+    try:
+        import streamlit as st
+        if key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    return os.getenv(key, default)
+
+
+MQTT_BROKER = _get_secret("MQTT_BROKER") or "broker.hivemq.com"
+MQTT_PORT = int(_get_secret("MQTT_PORT", "1883"))
+MQTT_PREFIX = _get_secret("MQTT_PREFIX", "canpack").strip().strip("/")
 
 
 def _topic(*parts):

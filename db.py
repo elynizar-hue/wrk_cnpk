@@ -7,11 +7,21 @@ import mysql.connector
 
 DB_FILE = os.path.join(os.path.dirname(__file__), ".canpack_data.db")
 
-MYSQL_HOST = os.getenv("MYSQL_HOST", "canpack-elynizar-dd70.h.aivencloud.com")
-MYSQL_PORT = int(os.getenv("MYSQL_PORT", "10132"))
-MYSQL_USER = os.getenv("MYSQL_USER", "avnadmin")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "AVNS_AVtS75AXF4DJYreklu-")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "defaultdb")
+def _get_secret(key, default=None):
+    try:
+        import streamlit as st
+        if key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    return os.getenv(key, default)
+
+
+MYSQL_HOST = _get_secret("MYSQL_HOST", "canpack-elynizar-dd70.h.aivencloud.com")
+MYSQL_PORT = int(_get_secret("MYSQL_PORT", "10132"))
+MYSQL_USER = _get_secret("MYSQL_USER", "avnadmin")
+MYSQL_PASSWORD = _get_secret("MYSQL_PASSWORD", "AVNS_AVtS75AXF4DJYreklu-")
+MYSQL_DATABASE = _get_secret("MYSQL_DATABASE", "defaultdb")
 MYSQL_SSL_MODE = os.getenv("MYSQL_SSL_MODE", "REQUIRED")
 
 # In-process lock to serialize write operations and avoid SQLITE_BUSY
