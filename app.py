@@ -6,6 +6,7 @@ Lancement :  streamlit run app.py
 Necessite un broker MQTT accessible (le meme que celui utilise par Node-RED).
 """
 import os
+import sqlite3
 import tempfile
 import time
 from datetime import datetime, timedelta
