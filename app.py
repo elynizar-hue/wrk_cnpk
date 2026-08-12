@@ -232,10 +232,10 @@ if st.sidebar.checkbox("Afficher diagnostics MQTT/DB"):
         try:
             df_dbg = pd.read_sql_query("SELECT id, armoire, courant_mA, moyenne, statut, horodatage FROM mesures ORDER BY id DESC LIMIT 20", conn_dbg)
             st.sidebar.write("Dernieres mesures SQLite (20):")
-            st.sidebar.dataframe(df_dbg, use_container_width=True)
+            st.sidebar.dataframe(df_dbg, width='stretch')
             df_alert = pd.read_sql_query("SELECT id, horodatage, armoire, niveau, valeur_mA FROM alertes ORDER BY id DESC LIMIT 20", conn_dbg)
             st.sidebar.write("Dernieres alertes SQLite (20):")
-            st.sidebar.dataframe(df_alert, use_container_width=True)
+            st.sidebar.dataframe(df_alert, width='stretch')
         finally:
             conn_dbg.close()
     except Exception as e:
@@ -246,8 +246,7 @@ if st.sidebar.checkbox("Afficher diagnostics MQTT/DB"):
         if client is None:
             st.sidebar.error("MQTT listener non demarre dans ce processus.")
         else:
-            st.sidebar.success("MQTT listener demarre (objet present)")
-            st.sidebar.write(type(client))
+            st.sidebar.success("MQTT listener demarre")
     except Exception as e:
         st.sidebar.error(f"Erreur status MQTT: {e}")
 
@@ -318,10 +317,10 @@ for i, nom in enumerate(ARMOIRES.keys()):
                 xaxis_title="", yaxis_title="Courant de fuite (mA)",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02),
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
             with st.expander("Voir les données brutes"):
-                st.dataframe(df.sort_values("horodatage", ascending=False), use_container_width=True)
+                st.dataframe(df.sort_values("horodatage", ascending=False), width='stretch')
                 st.download_button(
                     "Télécharger en CSV",
                     df.to_csv(index=False).encode("utf-8"),
@@ -339,7 +338,7 @@ with onglets[-2]:
             couleur = "#E74C3C" if row["niveau"] == "CRITIQUE" else "#F39C12"
             return [f"color: {couleur}"] * len(row)
 
-        st.dataframe(alertes.style.apply(_colorer, axis=1), use_container_width=True)
+        st.dataframe(alertes.style.apply(_colorer, axis=1), width='stretch')
         st.download_button(
             "Télécharger le journal en CSV",
             alertes.to_csv(index=False).encode("utf-8"),
@@ -348,7 +347,7 @@ with onglets[-2]:
         )
 
         fig_repartition = px.pie(alertes, names="armoire", title="Répartition des alertes par armoire")
-        st.plotly_chart(fig_repartition, use_container_width=True)
+        st.plotly_chart(fig_repartition, width='stretch')
 
 with onglets[-1]:
     st.subheader("Générer un rapport PDF")
