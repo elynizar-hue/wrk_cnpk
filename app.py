@@ -74,6 +74,9 @@ def _charger_avec_mysql(query, params=()):
     try:
         df = pd.read_sql_query(query, conn, params=params)
         return df
+    except Exception as e:
+        st.sidebar.error(f"MySQL query failed: {e}")
+        return None
     finally:
         conn.close()
 
@@ -203,14 +206,35 @@ if st.sidebar.checkbox("Afficher diagnostics MQTT/DB"):
             st.sidebar.write("Modifié:", datetime.utcfromtimestamp(os.path.getmtime(DB_FILE)).isoformat())
         else:
             st.sidebar.warning("Fichier DB introuvable dans ce processus.")
-        # show last rows
+
+        # MySQL explicit counts
+        conn_mysql = get_mysql_connection()
+        if conn_mysql is not None:
+            try:
+                cur = conn_mysql.cursor()
+                cur.execute("SELECT COUNT(*) FROM readings")
+                st.sidebar.write("MySQL readings count:", cur.fetchone()[0])
+                cur.execute("SELECT COUNT(*) FROM alerts")
+                st.sidebar.write("MySQL alerts count:", cur.fetchone()[0])
+                cur.execute("SELECT cabinet, MAX(horodatage) FROM readings GROUP BY cabinet")
+                st.sidebar.write("MySQL latest readings:", cur.fetchall())
+                cur.execute("SELECT cabinet, MAX(horodatage) FROM alerts GROUP BY cabinet")
+                st.sidebar.write("MySQL latest alerts:", cur.fetchall())
+            except Exception as e:
+                st.sidebar.error(f"MySQL query error: {e}")
+            finally:
+                conn_mysql.close()
+        else:
+            st.sidebar.warning("MySQL not connected")
+
+        # show last rows from SQLite
         conn_dbg = get_read_connection()
         try:
             df_dbg = pd.read_sql_query("SELECT id, armoire, courant_mA, moyenne, statut, horodatage FROM mesures ORDER BY id DESC LIMIT 20", conn_dbg)
-            st.sidebar.write("Dernieres mesures (20):")
+            st.sidebar.write("Dernieres mesures SQLite (20):")
             st.sidebar.dataframe(df_dbg, use_container_width=True)
             df_alert = pd.read_sql_query("SELECT id, horodatage, armoire, niveau, valeur_mA FROM alertes ORDER BY id DESC LIMIT 20", conn_dbg)
-            st.sidebar.write("Dernieres alertes (20):")
+            st.sidebar.write("Dernieres alertes SQLite (20):")
             st.sidebar.dataframe(df_alert, use_container_width=True)
         finally:
             conn_dbg.close()
