@@ -1,6 +1,6 @@
 """
 Generation d'un rapport PDF (graphes + tableau d'alertes) a partir de
-l'historique SQLite - utile pour la soutenance ou un point d'avancement.
+l'historique MySQL/SQLite - utile pour la soutenance ou un point d'avancement.
 
 Usage direct :  python report.py
 Ou via le bouton "Generer le rapport PDF" dans app.py
@@ -23,7 +23,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak,
 )
 
-from db import get_read_connection
+from db import get_read_connection, get_mysql_connection
 from mqtt_listener import ARMOIRES
 
 COULEUR_NORMAL = colors.HexColor("#2ECC71")
@@ -32,8 +32,32 @@ COULEUR_CRITIQUE = colors.HexColor("#E74C3C")
 
 
 def _charger_historique(armoire, depuis_heures=24):
-    conn = get_read_connection()
     depuis = (datetime.utcnow() - timedelta(hours=depuis_heures)).isoformat()
+
+    # Try MySQL first for historical data
+    conn_mysql = get_mysql_connection()
+    if conn_mysql is not None:
+        try:
+            df = pd.read_sql_query(
+                """
+                SELECT horodatage, courant_mA, moyenne, statut
+                FROM readings
+                WHERE cabinet = %s AND horodatage >= %s
+                ORDER BY horodatage ASC
+                """,
+                conn_mysql,
+                params=(armoire, depuis),
+            )
+            if not df.empty:
+                df["horodatage"] = pd.to_datetime(df["horodatage"])
+                return df
+        except Exception:
+            pass
+        finally:
+            conn_mysql.close()
+
+    # Fallback to SQLite
+    conn = get_read_connection()
     try:
         df = pd.read_sql_query(
             """
@@ -52,8 +76,32 @@ def _charger_historique(armoire, depuis_heures=24):
 
 
 def _charger_alertes(depuis_heures=24):
-    conn = get_read_connection()
     depuis = (datetime.utcnow() - timedelta(hours=depuis_heures)).isoformat()
+
+    # Try MySQL first for historical data
+    conn_mysql = get_mysql_connection()
+    if conn_mysql is not None:
+        try:
+            df = pd.read_sql_query(
+                """
+                SELECT horodatage, cabinet AS armoire, niveau, valeur_mA
+                FROM alerts
+                WHERE horodatage >= %s
+                ORDER BY horodatage DESC
+                """,
+                conn_mysql,
+                params=(depuis,),
+            )
+            if not df.empty:
+                df["horodatage"] = pd.to_datetime(df["horodatage"])
+                return df
+        except Exception:
+            pass
+        finally:
+            conn_mysql.close()
+
+    # Fallback to SQLite
+    conn = get_read_connection()
     try:
         df = pd.read_sql_query(
             """
