@@ -31,6 +31,30 @@ st.set_page_config(
 
 COULEURS_STATUT = {"normal": "#2ECC71", "PRECOCE": "#F39C12", "CRITIQUE": "#E74C3C"}
 
+st.markdown(
+    """
+    <style>
+    @keyframes flicker-orange {
+      0% { background-color: #2ECC71; }
+      50% { background-color: #F39C12; }
+      100% { background-color: #2ECC71; }
+    }
+    @keyframes flicker-red {
+      0% { background-color: #F39C12; }
+      50% { background-color: #E74C3C; }
+      100% { background-color: #F39C12; }
+    }
+    .card-precose {
+      animation: flicker-orange 1.2s infinite;
+    }
+    .card-critique {
+      animation: flicker-red 1.2s infinite;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 # ---- Demarrage du listener MQTT en arriere-plan (une seule fois par process) ----
 @st.cache_resource
@@ -214,7 +238,7 @@ plage_deltas = {
 depuis = (datetime.utcnow() - plage_deltas[plage]).isoformat()
 jusqu_a = datetime.utcnow().isoformat()
 
-rafraichissement = st.sidebar.slider("Rafraîchissement (secondes)", 2, 30, 5)
+rafraichissement = st.sidebar.slider("Rafraîchissement (secondes)", 3, 30, 5)
 auto_refresh = st.sidebar.checkbox("Rafraîchissement automatique", value=True)
 
 st.sidebar.divider()
@@ -294,9 +318,14 @@ for i, nom in enumerate(ARMOIRES.keys()):
         else:
             row = ligne.iloc[0]
             couleur = COULEURS_STATUT.get(row["statut"], "#888888")
+            animation_class = ""
+            if row["statut"] == "PRECOCE":
+                animation_class = "card-precose"
+            elif row["statut"] == "CRITIQUE":
+                animation_class = "card-critique"
             st.markdown(
                 f"""
-                <div style="border:1px solid #333; border-radius:10px; padding:16px; text-align:center;">
+                <div class="{animation_class}" style="border:1px solid #333; border-radius:10px; padding:16px; text-align:center;">
                     <div style="font-size:14px; color:#999;">{nom}</div>
                     <div style="font-size:32px; font-weight:bold;">{row['moyenne']:.1f} mA</div>
                     <div style="color:{couleur}; font-weight:bold;">{row['statut']}</div>
