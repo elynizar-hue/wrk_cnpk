@@ -215,8 +215,9 @@ def generer_rapport_pdf(chemin_sortie, depuis_heures=24):
     else:
         lignes_alertes = [["Horodatage", "Armoire", "Niveau", "Valeur (mA)"]]
         for _, r in alertes_globales.iterrows():
+            horodatage_str = pd.to_datetime(r["horodatage"]).strftime("%Y-%m-%d %H:%M:%S")
             lignes_alertes.append([
-                r["horodatage"].replace("T", " ")[:19], r["armoire"], r["niveau"], f"{r['valeur_mA']:.1f}"
+                horodatage_str, r["armoire"], r["niveau"], f"{r['valeur_mA']:.1f}"
             ])
 
         table_alertes = Table(lignes_alertes, colWidths=[5 * cm, 5 * cm, 3 * cm, 3.5 * cm], repeatRows=1)
