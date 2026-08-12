@@ -59,7 +59,7 @@ if listener is None:
 
 
 # ---- Fonctions de lecture des donnees ----
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=2)
 def _charger_avec_sqlite(query, params=()):
     conn = get_read_connection()
     try:
@@ -68,7 +68,7 @@ def _charger_avec_sqlite(query, params=()):
         conn.close()
 
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=2)
 def _charger_avec_mysql(query, params=()):
     conn = get_mysql_connection()
     if conn is None:
@@ -83,7 +83,7 @@ def _charger_avec_mysql(query, params=()):
         conn.close()
 
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=2)
 def charger_dernieres_mesures():
     mysql_df = _charger_avec_mysql(
         """
@@ -117,7 +117,7 @@ def _round_iso_to_minute(iso_str):
         return iso_str
 
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=2)
 def charger_historique(armoire, depuis, jusqu_a):
     depuis = _round_iso_to_minute(depuis)
     jusqu_a = _round_iso_to_minute(jusqu_a)
@@ -146,7 +146,7 @@ def charger_historique(armoire, depuis, jusqu_a):
     return df
 
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=2)
 def charger_alertes(limite=100):
     mysql_df = _charger_avec_mysql(
         "SELECT horodatage, cabinet AS armoire, niveau, valeur_mA "
@@ -205,7 +205,7 @@ plage_deltas = {
 depuis = (datetime.utcnow() - plage_deltas[plage]).isoformat()
 jusqu_a = datetime.utcnow().isoformat()
 
-rafraichissement = st.sidebar.slider("Rafraîchissement (secondes)", 5, 60, 10)
+rafraichissement = st.sidebar.slider("Rafraîchissement (secondes)", 2, 30, 5)
 auto_refresh = st.sidebar.checkbox("Rafraîchissement automatique", value=True)
 
 st.sidebar.divider()
